@@ -1,7 +1,7 @@
 // POST /api/ingest -> lo llama el lector de stock (GitHub Actions) con la clave INGEST_TOKEN
-import { db, json, bearer, same } from '../../lib/db.js';
+import { db, json, bearer, same, secret } from '../../lib/db.js';
 export async function onRequestPost({ request, env }) {
-  if (!same(bearer(request), env.INGEST_TOKEN)) return json({ error: 'no autorizado' }, 401);
+  if (!same(bearer(request), secret(env.INGEST_TOKEN))) return json({ error: 'no autorizado' }, 401);
   let d; try { d = await request.json(); } catch { return json({ error: 'json inválido' }, 400); }
   if (!d || d.v !== 1 || typeof d.ts !== 'number' || typeof d.prods !== 'object' || typeof d.stock !== 'object') return json({ error: 'formato inválido' }, 400);
   const v = JSON.stringify(d);

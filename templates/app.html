@@ -720,7 +720,7 @@ var PASS="";try{PASS=sessionStorage.getItem("kaury_panel")||"";}catch(e){}
 function loadReal(){
   if(MODE!=="panel"||!PASS){realErr="nodb";drawData();return;}
   var timer=setTimeout(function(){if(!realLoaded){realErr="slow";drawData();}},15000);
-  fetch(API+"/admin/events?days=90",{headers:{"Authorization":"Bearer "+PASS},cache:"no-store"}).then(function(r){if(r.status===401)throw "auth";if(!r.ok)throw "err";return r.json();})
+  fetch(API+"/admin/events?days=90",{headers:{"Authorization":"Bearer "+encodeURIComponent(PASS)},cache:"no-store"}).then(function(r){if(r.status===401)throw "auth";if(!r.ok)throw "err";return r.json();})
   .then(function(d){clearTimeout(timer);realLoaded=true;realErr="";realEvents=d.ev||[];isAdmin=true;drawData();},function(e){clearTimeout(timer);realErr=e==="auth"?"auth":"err";drawData();if(e==="auth")showLogin("La contraseña ya no es válida.");});
 }
 /* Stock en vivo: se pide al abrir y cada 5 minutos. */
@@ -811,7 +811,7 @@ document.addEventListener("pointerdown",function(e){var b=$("shbox");if(!b.hidde
 var isOwner=false,asClient=false;
 function showLogin(msg){if(MODE!=="panel")return;$("login").hidden=false;$("lerr").textContent=msg||"";setTimeout(function(){$("lpass").focus();},50);}
 if(MODE==="panel"){$("login").addEventListener("submit",function(e){e.preventDefault();var v=$("lpass").value.trim();if(!v)return;$("lerr").textContent="Revisando…";
-  fetch(API+"/admin/events?days=1",{headers:{"Authorization":"Bearer "+v},cache:"no-store"}).then(function(r){if(r.status===401){$("lerr").textContent="Contraseña incorrecta.";return;}if(!r.ok){$("lerr").textContent="No se pudo conectar. Probá de nuevo.";return;}
+  fetch(API+"/admin/events?days=1",{headers:{"Authorization":"Bearer "+encodeURIComponent(v)},cache:"no-store"}).then(function(r){if(r.status===401){$("lerr").textContent="Contraseña incorrecta.";return;}if(r.status===503){$("lerr").textContent="Falta configurar la contraseña del panel en Cloudflare.";return;}if(!r.ok){$("lerr").textContent="No se pudo conectar. Probá de nuevo.";return;}
    PASS=v;try{sessionStorage.setItem("kaury_panel",v);}catch(x){}$("login").hidden=true;enterPanel();},function(){$("lerr").textContent="No se pudo conectar. Probá de nuevo.";});});}
 function enterPanel(){isOwner=true;$("ownerNav").hidden=false;$("upd").style.marginLeft="12px";srcReal=true;$("srcReal").setAttribute("aria-pressed","true");$("srcDemo").setAttribute("aria-pressed","false");if(!location.hash)location.hash="#datos";loadReal();route();}
 $("asClient").addEventListener("click",function(){if(MODE==="panel"){window.open("/","_blank");return;}asClient=true;$("ownerNav").hidden=true;if(location.hash==="#datos")location.hash="#mapa";else route();toast("Así ve la página el público. Recargá para volver a ver el panel.");});

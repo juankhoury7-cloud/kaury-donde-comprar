@@ -1,7 +1,8 @@
 // GET /api/admin/events?days=90 -> datos para el panel (pide la contraseña PANEL_PASSWORD)
-import { db, json, bearer, same } from '../../../lib/db.js';
+import { db, json, bearer, same, secret } from '../../../lib/db.js';
 export async function onRequestGet({ request, env }) {
-  if (!same(bearer(request), env.PANEL_PASSWORD)) { await new Promise(r => setTimeout(r, 400)); return json({ error: 'no autorizado' }, 401); }
+  if (!secret(env.PANEL_PASSWORD)) return json({ error: 'falta configurar PANEL_PASSWORD en Cloudflare' }, 503);
+  if (!same(bearer(request), secret(env.PANEL_PASSWORD))) { await new Promise(r => setTimeout(r, 400)); return json({ error: 'no autorizado' }, 401); }
   const days = Math.min(365, Math.max(1, +new URL(request.url).searchParams.get('days') || 90));
   const DB = await db(env);
   const { results } = await DB.prepare('SELECT ts,sid,t,a,c,z,p,r,st,k FROM ev WHERE ts>=?1 ORDER BY ts DESC LIMIT 50000').bind(Date.now() - days * 864e5).all();
