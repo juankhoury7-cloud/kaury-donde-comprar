@@ -92,18 +92,19 @@ a{color:inherit}
 .grat{fill:none;stroke:#e2e0db;stroke-width:.6}
 .city{font:600 9.5px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;fill:#8f8d88;paint-order:stroke;stroke:#fff;stroke-width:3px;pointer-events:none}
 .cl{cursor:pointer}
-.cl .core{fill:var(--red);stroke:#fff;stroke-width:2}
-.cl .lbl{font:700 11px/1 var(--sans);fill:#fff;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.cl .core{fill:#fff;stroke:var(--ink);stroke-width:1.6}
+.cl .lbl{font:800 11.5px/1 var(--sans);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
 .cl .pin{fill:var(--red);stroke:#fff;stroke-width:1.6}
 .cl .pdot{fill:#fff;pointer-events:none}
 .cl .shadow{fill:rgba(0,0,0,.18)}
-.cl.unk .core,.cl.unk .pin{fill:#9a9a9a}
-.cl .pin.may,.cl .core.may{fill:var(--ink)}
-.cl .core.mix{stroke:var(--ink);stroke-width:3}
+.cl.unk .pin{fill:#9a9a9a}
+.cl.unk .core{stroke:#9a9a9a}.cl.unk .lbl{fill:#8a8a8a}
+.cl .pin.may{fill:var(--ink)}
 .cl.sel .pin,.cl.sel .core{stroke-width:2.6}
 .cl.sel{transform:scale(1.3)}
-.cl:hover .core,.cl:hover .pin{fill:var(--red-d)}
-.cl:hover .pin.may,.cl:hover .core.may{fill:#3a3a3a}
+.cl:hover .pin{fill:var(--red-d)}
+.cl:hover .pin.may{fill:#3a3a3a}
+.cl:hover .core{fill:#f3f3f3}
 @media (prefers-reduced-motion:no-preference){.cl.in{animation:pop .5s cubic-bezier(.2,1.4,.4,1) both}@keyframes pop{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:scale(1)}}}
 
 /* buscador flotante */
@@ -642,7 +643,7 @@ function drawDots(){
     var n=c.m.length,sel=c.m.some(function(s){return s.id===st.sel;}),unk=!!st.code&&c.m.every(function(s){return !s.vset;}),ids=c.m.map(function(s){return s.id;}).join(","),x=c.x,y=c.y;
     var inner;
     var nu=c.m.filter(function(s){return s.inMin;}).length,cc=nu===0?" may":nu<n?" mix":"";
-    if(n>1){var r=11+Math.min(14,Math.sqrt(n)*2.2);inner='<circle class="core'+cc+'" cx="'+x+'" cy="'+y+'" r="'+r+'"/><text class="lbl" x="'+x+'" y="'+y+'">'+n+'</text>';}
+    if(n>1){var r=11+Math.min(14,Math.sqrt(n)*2.2);inner='<circle class="core" cx="'+x+'" cy="'+y+'" r="'+r+'"/><text class="lbl" x="'+x+'" y="'+y+'">'+n+'</text>';}
     else{inner='<ellipse class="shadow" cx="'+x+'" cy="'+(y+1)+'" rx="5" ry="2"/><path class="pin'+cc+'" d="M'+x+','+y+' c-2.2,-4.4 -8,-9.6 -8,-15 a8,8 0 1 1 16,0 c0,5.4 -5.8,10.6 -8,15z"/><circle class="pdot" cx="'+x+'" cy="'+(y-15)+'" r="3"/>';}
     html+='<g class="cl'+(sel?" sel":"")+(unk?" unk":"")+(intro?" in":"")+'" data-ids="'+ids+'" tabindex="0" role="button" aria-label="'+(n>1?n+" locales":esc(c.m[0].name)+", "+kindTxt(c.m[0]).toLowerCase())+'" style="transform-origin:'+x+'px '+y+'px;'+(intro?"animation-delay:"+Math.round(Math.max(0,y)/vh*500)+"ms":"")+'"><circle cx="'+x+'" cy="'+(n>1?y:y-12)+'" r="'+(n>1?16+Math.min(14,Math.sqrt(n)*2.2):13)+'" fill="transparent"/>'+inner+'</g>';
   });
