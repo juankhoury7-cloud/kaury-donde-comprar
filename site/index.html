@@ -113,6 +113,14 @@ a{color:inherit}
 .chip.curva{border-color:var(--red);color:var(--red);font-weight:800}.chip.curva[aria-pressed="true"]{background:var(--red);color:#fff}
 .top.typing .modo{visibility:hidden}
 .tg.min{background:#fff4d6;color:#7a5a00}
+.mrv{font-weight:800;font-size:16px;margin-bottom:8px}
+.dual{position:relative;height:30px;margin:0 4px}.dual .trk{position:absolute;left:0;right:0;top:13px;height:4px;border-radius:2px;background:var(--line2)}.dual .fill{position:absolute;top:0;bottom:0;background:var(--red);border-radius:2px}
+.dual input{position:absolute;left:-4px;right:-4px;top:0;width:calc(100% + 8px);height:30px;margin:0;background:none;-webkit-appearance:none;appearance:none;pointer-events:none}
+.dual input::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:26px;height:26px;border-radius:50%;background:#fff;border:2px solid var(--red);box-shadow:var(--sh);cursor:pointer}
+.dual input::-moz-range-thumb{pointer-events:auto;width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid var(--red);cursor:pointer}
+.dual input:focus{outline:none}.dual input:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px var(--red-soft)}
+.dual input::-webkit-slider-runnable-track{background:none}.dual input::-moz-range-track{background:none}
+.mrs{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin:2px 0 10px}
 .mins{display:flex;flex-wrap:wrap;gap:6px}.mins button{border:1px solid var(--line2);background:var(--white);border-radius:99px;padding:8px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}.mins button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .sbox{position:relative;z-index:3;background:var(--white);border-radius:16px;box-shadow:var(--sh);border:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:0 6px 0 14px;min-height:52px}
 .sbox svg{flex:0 0 auto;color:var(--muted)}
@@ -438,7 +446,14 @@ function colorsFor(a){var seen={},out=[];a.colors.forEach(function(c){seen[c.n]=
   Object.keys(sk).forEach(function(id){var e=sk[id];if(e&&e!=="?")Object.keys(e).forEach(function(n){if(!seen[n]){seen[n]=1;out.push({n:n,h:HEX[n]||"#cfcfcf"});}});});return out;}
 function sizesAll(a){var seen={},out=a.sizes.slice();out.forEach(function(z){seen[z]=1;});var sk=stockFor(a.code);
   Object.keys(sk).forEach(function(id){var e=sk[id];if(e&&e!=="?")Object.keys(e).forEach(function(n){e[n].forEach(function(z){if(!seen[z]){seen[z]=1;out.push(z);}});});});return out;}
-var st={code:"",colors:[],sizes:[],prov:"",type:"",web:false,conf:false,sel:"",maxMin:0,curva:false};
+var st={code:"",colors:[],sizes:[],prov:"",type:"",web:false,conf:false,sel:"",minLo:0,minHi:0,curva:false};
+/* Rango de compra mínima (mayorista). minHi=0 significa "sin tope". */
+var MIN_STOPS=[0,10000,20000,30000,40000,50000,60000,70000,80000,90000,100000,120000,150000,200000,250000,300000,400000,500000],MIN_MAX=500000;
+function stopIdx(v){var i=MIN_STOPS.indexOf(v);return i<0?0:i;}
+function minActive(){return MODO==="may"&&(st.minLo>0||st.minHi>0);}
+function minOK(s){if(!minActive())return true;if(s.minAmt===null)return false;return s.minAmt>=st.minLo&&(!st.minHi||s.minAmt<=st.minHi);}
+function money(v){return "$"+v.toLocaleString("es-AR");}
+function minRangeTxt(){return st.minLo&&st.minHi?"entre "+money(st.minLo)+" y "+money(st.minHi):st.minHi?"hasta "+money(st.minHi):st.minLo?"desde "+money(st.minLo):"";}
 /* Un local entra si tiene alguno de los colores elegidos en alguno de los talles elegidos (sin elección = cualquiera). */
 function matchEnt(ent,colors,sizes){if(!ent)return false;if(ent==="?")return !colors.length&&!sizes.length;var cs=colors.length?colors:Object.keys(ent);
   return cs.some(function(c){var zs=ent[c];return !!zs&&(!sizes.length||sizes.some(function(z){return zs.indexOf(z)>=0;}));});}
@@ -453,7 +468,7 @@ function visible(){
   var stock=st.code?stockFor(st.code):null;
   return STORES.filter(function(s){
     if(!s.on)return false;
-    if(MODO==="may"&&st.maxMin&&!(s.minAmt!==null&&s.minAmt<=st.maxMin))return false;
+    if(!minOK(s))return false;
     if(st.prov&&s.prov!==st.prov)return false;
     if(st.type&&(st.type==="-"?s.type:s.type!==st.type))return false;
     if(st.web&&!s.web)return false;
@@ -529,7 +544,7 @@ $("strip2").addEventListener("click",function(e){
 function renderSum(vis){
   var a=st.code?ART[st.code]:null,el=$("sum");
   if(!a){el.className="sum";if(MODO==="may"){var mm=vis.filter(function(s){return s.minAmt!==null;}).map(function(s){return s.minAmt;}),lo=mm.length?Math.min.apply(null,mm):null;
-      el.innerHTML='<b>'+vis.length+'</b><span class="s">mayoristas'+(st.prov?" en "+esc(st.prov):" en todo el país")+(st.maxMin?' con compra mínima hasta $'+st.maxMin.toLocaleString("es-AR"):'')+(lo===0?' · algunos sin compra mínima':lo!==null?' · compra mínima desde $'+lo.toLocaleString("es-AR"):'')+'<br><button type="button" class="lstb">Ver lista por compra mínima ›</button></span>';}
+      el.innerHTML='<b>'+vis.length+'</b><span class="s">mayoristas'+(st.prov?" en "+esc(st.prov):" en todo el país")+(minActive()?' con compra mínima '+minRangeTxt():'')+(minActive()?'':lo===0?' · algunos sin compra mínima':lo!==null?' · compra mínima desde $'+lo.toLocaleString("es-AR"):'')+'<br><button type="button" class="lstb">Ver lista por compra mínima ›</button></span>';}
     else el.innerHTML='<b>'+vis.length+'</b><span class="s">locales con tienda online'+(st.prov?" en "+esc(st.prov):" en todo el país")+' · comprás una sola prenda, sin mínimo</span>';}
   else if(!vis.length){var al=alternatives(a);el.className="sum zero";
     el.innerHTML='<span class="s"><b>No hay</b> el '+esc(a.code)+esc(selDesc())+(st.curva?' en curva completa':'')+(st.prov?" en "+esc(st.prov):"")+' en ninguna tienda hoy.'+(al.length?' Pero hay:':' Probá sin filtros.')+'</span>'+
@@ -543,7 +558,7 @@ $("sum").addEventListener("click",function(e){if(e.target.closest(".ntf")){askAl
   if(b){var x=this._alts[+b.getAttribute("data-i")];if(!x)return;st.colors=x.c;st.sizes=x.z;if(x.allProv)st.prov="";st.sel="";closeSheet();renderTop();render(true);logSearch();return;}
   if(!this.classList.contains("zero"))animateTo(fitTo(curVis),600);});
 /* Sin resultados: proponer lo más cercano que sí hay (otro talle del mismo color, otro color del mismo talle, todo el país). */
-function countFor(colors,sizes,allProv){var stock=stockFor(st.code);return STORES.filter(function(s){if(!s.on)return false;if(MODO==="may"&&st.maxMin&&!(s.minAmt!==null&&s.minAmt<=st.maxMin))return false;if(!allProv&&st.prov&&s.prov!==st.prov)return false;return matchEnt(stock[s.id],colors,sizes);}).length;}
+function countFor(colors,sizes,allProv){var stock=stockFor(st.code);return STORES.filter(function(s){if(!s.on)return false;if(!minOK(s))return false;if(!allProv&&st.prov&&s.prov!==st.prov)return false;return matchEnt(stock[s.id],colors,sizes);}).length;}
 function alternatives(a){var out=[],seen={};function add(c,z,label,allProv){var k=c.join("+")+"|"+z.join("+")+"|"+(allProv?1:0);if(seen[k])return;var n=countFor(c,z,allProv);if(n){seen[k]=1;out.push({c:c,z:z,label:label,n:n,allProv:allProv});}}
   var C=st.colors,Z=st.sizes,cols=colorsFor(a).map(function(x){return x.n;}),szs=sizesAll(a),cand=[];
   if(st.prov){add(C,Z,"En todo el país",true);}
@@ -734,19 +749,28 @@ function showList(list,how){
 function provCount(){var provs={};STORES.forEach(function(s){if(s.on)provs[s.prov]=(provs[s.prov]||0)+1;});return provs;}
 var ZONES=[["AMBA",[-34.42,-58.98,-34.9,-58.15]],["Once y Flores",[-34.6,-58.49,-34.64,-58.39]],["Rosario",[-32.9,-60.72,-33.01,-60.62]],["Córdoba",[-31.4,-64.2,-31.43,-64.17]],["Mar del Plata",[-37.97,-57.6,-38.01,-57.53]],["Noreste",[-26.1,-59.3,-27.6,-55.0]],["Noroeste",[-24.0,-66.9,-29.6,-64.0]]];
 $("filtBtn").addEventListener("click",function(){
-  sugg.hidden=true;var provs=provCount(),MINS=[[0,"Cualquiera"],[50000,"Hasta $50.000"],[100000,"Hasta $100.000"],[150000,"Hasta $150.000"],[250000,"Hasta $250.000"]];
+  sugg.hidden=true;var provs=provCount();
   openSheet('<h3>Filtros y zonas</h3><div class="fl">'+
-   (MODO==="may"?'<div><span class="t" style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">Compra mínima</span><div class="mins">'+MINS.map(function(m){return '<button type="button" data-min="'+m[0]+'" class="'+(st.maxMin===m[0]?"on":"")+'">'+m[1]+'</button>';}).join("")+'</div><small style="display:block;color:var(--muted);font-size:12px;margin-top:6px">Al filtrar por monto quedan afuera los mayoristas que no publican su compra mínima.</small></div>':'')+
+   (MODO==="may"?'<div class="mr"><span class="t" style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px">Tu compra mínima deseada</span>'+
+     '<div class="mrv" id="mrv"></div><div class="dual"><div class="trk"><div class="fill" id="mrFill"></div></div><input type="range" id="mrLo" min="0" max="'+(MIN_STOPS.length-1)+'" step="1" value="'+stopIdx(st.minLo)+'" aria-label="Compra mínima desde"><input type="range" id="mrHi" min="0" max="'+(MIN_STOPS.length-1)+'" step="1" value="'+(st.minHi?stopIdx(st.minHi):MIN_STOPS.length-1)+'" aria-label="Compra mínima hasta"></div>'+
+     '<div class="mrs"><span>$0</span><span>'+money(MIN_MAX)+' o más</span></div>'+
+     '<div class="mins">'+[[0,50000,"Hasta $50.000"],[50000,100000,"$50.000 a $100.000"],[100000,200000,"$100.000 a $200.000"],[0,0,"Cualquiera"]].map(function(m){return '<button type="button" data-lo="'+m[0]+'" data-hi="'+m[1]+'">'+m[2]+'</button>';}).join("")+'</div>'+
+     '<small style="display:block;color:var(--muted);font-size:12px;margin-top:6px">Al elegir un rango quedan afuera los mayoristas que no publican su compra mínima.</small></div>':'')+
    '<div><label class="t" for="fProv">Provincia</label><select id="fProv"><option value="">Todo el país</option>'+Object.keys(provs).sort(function(a,b){return provs[b]-provs[a];}).map(function(p){return '<option value="'+esc(p)+'"'+(st.prov===p?" selected":"")+'>'+esc(p)+' ('+provs[p]+')</option>';}).join("")+'</select></div>'+
    '<div><span class="t" style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">Ir a una zona</span><div class="zones">'+ZONES.map(function(z,i){return '<button type="button" data-z="'+i+'">'+z[0]+'</button>';}).join("")+'</div></div>'+
    '<button type="button" class="btn red" id="fOk">Ver '+visible().length+(MODO==="may"?' mayoristas':' locales')+'</button></div>');
   function upd(){$("fOk").textContent="Ver "+visible().length+(MODO==="may"?" mayoristas":" locales");updBadge();}
   $("fProv").addEventListener("change",function(){st.prov=this.value;upd();});
-  [].forEach.call(sheet.querySelectorAll("[data-min]"),function(b){b.addEventListener("click",function(){st.maxMin=+b.getAttribute("data-min");[].forEach.call(sheet.querySelectorAll("[data-min]"),function(x){x.classList.toggle("on",x===b);});upd();});});
+  function paintMr(){if(!$("mrLo"))return;var N=MIN_STOPS.length-1,li=+$("mrLo").value,hi=+$("mrHi").value;if(li>hi){var x=li;li=hi;hi=x;}
+    st.minLo=MIN_STOPS[li];st.minHi=hi>=N?0:MIN_STOPS[hi];$("mrFill").style.left=(li/N*100)+"%";$("mrFill").style.right=(100-hi/N*100)+"%";
+    $("mrv").textContent=minActive()?"Compra mínima "+minRangeTxt():"Cualquier compra mínima";
+    [].forEach.call(sheet.querySelectorAll("[data-lo]"),function(b){b.classList.toggle("on",+b.getAttribute("data-lo")===st.minLo&&+b.getAttribute("data-hi")===st.minHi);});upd();}
+  if($("mrLo")){["mrLo","mrHi"].forEach(function(id){$(id).addEventListener("input",paintMr);});
+    [].forEach.call(sheet.querySelectorAll("[data-lo]"),function(b){b.addEventListener("click",function(){$("mrLo").value=stopIdx(+b.getAttribute("data-lo"));$("mrHi").value=+b.getAttribute("data-hi")?stopIdx(+b.getAttribute("data-hi")):MIN_STOPS.length-1;paintMr();});});paintMr();}
   $("fOk").addEventListener("click",function(){closeSheet();render(true);if(st.code&&st.prov)logSearch();});
   Array.prototype.forEach.call(sheet.querySelectorAll("[data-z]"),function(b){b.addEventListener("click",function(){var z=ZONES[+b.getAttribute("data-z")][1],a=proj(z[0],z[1]),c=proj(z[2],z[3]);closeSheet();render(false);animateTo(fitBox(Math.min(a[0],c[0]),Math.min(a[1],c[1]),Math.max(a[0],c[0]),Math.max(a[1],c[1])),700);});});
 });
-function updBadge(){var n=(st.prov?1:0)+(MODO==="may"&&st.maxMin?1:0),b=$("fBadge");b.textContent=n;b.hidden=!n;}
+function updBadge(){var n=(st.prov?1:0)+(minActive()?1:0),b=$("fBadge");b.textContent=n;b.hidden=!n;}
 var tt;function toast(t){var el=$("toast");el.textContent=t;el.hidden=false;clearTimeout(tt);tt=setTimeout(function(){el.hidden=true;},4500);}
 
 /* ---------- tiras de chips: flechas, degradado, rueda y arrastre ---------- */
@@ -917,7 +941,7 @@ document.addEventListener("pointerdown",function(e){var b=$("shbox");if(!b.hidde
 function paintModo(){[].forEach.call(document.querySelectorAll("#modo button"),function(b){b.setAttribute("aria-pressed",String(b.getAttribute("data-m")===MODO));});
   $("canalLbl").textContent=MODO==="may"?"Venta mayorista":"Venta minorista";document.title=MODO==="may"?"Kaury · Dónde comprar · Venta mayorista":"Kaury · Dónde comprar · Venta minorista";}
 function setModo(m,silent){if(m!=="may")m="min";if(m===MODO&&!silent){return;}MODO=m;try{localStorage.setItem("kaury_modo",m);}catch(e){}
-  if(m==="min"){st.maxMin=0;st.curva=false;}bindMode();paintModo();st.sel="";closeSheet();renderTop();render(true);updBadge();if(!loadedAt[m])pullStock();}
+  if(m==="min"){st.minLo=0;st.minHi=0;st.curva=false;}bindMode();paintModo();st.sel="";closeSheet();renderTop();render(true);updBadge();if(!loadedAt[m])pullStock();}
 $("modo").addEventListener("click",function(e){var b=e.target.closest("button[data-m]");if(b)setModo(b.getAttribute("data-m"));});
 paintModo();
 
