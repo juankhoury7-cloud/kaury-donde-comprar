@@ -882,7 +882,7 @@ function api(path,opt){opt=opt||{};opt.credentials="same-origin";if(opt.body){op
 function loadMe(){return api("/me",{cache:"no-store"}).then(function(d){me=d.user||null;myAlerts=d.alerts||[];paintAcct();return me;}).catch(function(){});}
 function paintAcct(){var b=$("acctBtn");if(!ACCOUNTS){b.hidden=true;return;}b.hidden=false;
   if(me){b.className="acct in";b.innerHTML='<span class="av">'+esc((me.name||me.email||"?").charAt(0).toUpperCase())+'</span>'+(function(n){return n===1?'1 aviso':n+' avisos';})(myAlerts.filter(function(x){return x.active;}).length).replace(/ avisos?$/,'<span class="lb">$&</span>');}
-  else{b.className="acct";b.innerHTML='🔔<span class="lb"> Avisos</span>';}}
+  else{b.className="acct";b.textContent="Entrar";b.title="Entrá con Google para recibir avisos de stock";}}
 function gis(){if(window.google&&google.accounts&&google.accounts.id)return Promise.resolve();if(gisLoading)return gisLoading;
   gisLoading=new Promise(function(ok,ko){var s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;s.onload=function(){ok();};s.onerror=function(){gisLoading=null;ko();};document.head.appendChild(s);})
    .then(function(){google.accounts.id.initialize({client_id:GCID,callback:onGoogle,ux_mode:"popup",auto_select:false,cancel_on_tap_outside:true,itp_support:true});});
