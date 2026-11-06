@@ -19,8 +19,8 @@ export async function onRequestPost({ request, env }) {
   const c = await DB.prepare("INSERT INTO kv (k,v,at) VALUES (?1,?2,?3) ON CONFLICT(k) DO UPDATE SET v=CAST(v AS INTEGER)+?2, at=?3 RETURNING v")
     .bind('evn:' + day(), String(rows.length), now).first();
   if (c && +c.v > cap) return json({ ok: false, error: 'tope diario alcanzado' }, 429);
-  const st = DB.prepare('INSERT INTO ev (ts,sid,t,a,c,z,p,r,st,k) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)');
+  const st = DB.prepare('INSERT INTO ev (ts,sid,t,a,c,z,p,r,st,k,m) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)');
   await DB.batch(rows.map(e => { let ts = I(e.ts); if (!ts || Math.abs(ts - now) > 864e5) ts = now;
-    return st.bind(ts, sid, e.t, S(e.a, 24), S(e.c, 120), S(e.z, 60), S(e.p, 40), I(e.r), I(e.st), S(e.k, 8)); }));
+    return st.bind(ts, sid, e.t, S(e.a, 24), S(e.c, 120), S(e.z, 60), S(e.p, 40), I(e.r), I(e.st), S(e.k, 8), e.m === 'may' ? 'may' : 'min'); }));
   return json({ ok: true, n: rows.length });
 }

@@ -5,7 +5,7 @@ const r = p => readFile(new URL('../' + p, import.meta.url), 'utf8');
 const J = async p => JSON.parse(await r(p));
 const [tpl, map, stores, cat, sizes, snap, cfg] = await Promise.all([r('templates/app.html'), J('data/map.json'), J('data/stores.json'), J('data/catalog.json'), J('data/sizes.json'), J('data/snapshot.json'), J('data/config.json')]);
 const js = x => JSON.stringify(x).replace(/</g, '\\u003c');
-const fmt = ts => new Date(ts).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+const fmt = ts => { const o = { timeZone: 'America/Argentina/Buenos_Aires' }; const d = new Date(ts); return d.toLocaleDateString('es-AR', { ...o, day: 'numeric', month: 'numeric', year: 'numeric' }) + ' a las ' + d.toLocaleTimeString('es-AR', { ...o, hour: '2-digit', minute: '2-digit', hour12: false }); };
 function build(mode) {
   const V = {
     __NEIGH__: map.neigh, __ARG__: map.arg, __MALV__: map.malv,

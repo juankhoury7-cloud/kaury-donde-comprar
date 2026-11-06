@@ -7,7 +7,7 @@ export async function onRequestGet({ request, env }) {
   if (!allow('me:' + ipOf(request), 60, 60e3)) return tooMany();
   const DB = await db(env), u = await currentUser(DB, request);
   if (!u) return json({ user: null }, 200, H);
-  const { results } = await DB.prepare('SELECT id,a,c,z,p,created,sent,active FROM alerts WHERE uid=?1 ORDER BY created DESC LIMIT 50').bind(u.id).all();
+  const { results } = await DB.prepare('SELECT id,a,c,z,p,m,created,sent,active FROM alerts WHERE uid=?1 ORDER BY created DESC LIMIT 50').bind(u.id).all();
   return json({ user: pub(u), alerts: results }, 200, H);
 }
 export async function onRequestPost({ request, env }) {
