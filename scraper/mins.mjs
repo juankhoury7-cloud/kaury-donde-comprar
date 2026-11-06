@@ -80,6 +80,7 @@ export async function checkMins(hosts, prev = {}) {
     } else {
       // no publica el mínimo: si teníamos una promo temporal, se vuelve al de siempre; si no, queda para revisar
       if (o.temp) { set(h.base, '', false, 'terminó la promo'); o.st = 'cambio'; }
+      else if (cur === 0 && !r.qty) o.st = 'ok';   // ya figuraba sin mínimo y su web no menciona ninguno
       else { o.st = r.qty ? 'dudoso' : 'no'; o.why = r.qty ? 'el mínimo es por cantidad (' + r.qty + ')' : 'no encontré la compra mínima en su web'; }
     }
     res[host] = o;
