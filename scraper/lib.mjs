@@ -47,19 +47,48 @@ export async function listProducts(shop, CAT) {
   const O = shop.origin, host = new URL(O).host;
   const prod = {}, cnt = {};
   let pagesOk = 0, firstErr = null;
+  // opciones por tienda (data/shops.json):
+  //   hosts:   otras direcciones donde la tienda publica sus artículos (p. ej. gtlenceria.com.ar para gtmayorista.com)
+  //   codeRe:  de dónde sale el número de artículo en el link (p. ej. "/ka(\\d{3,4})-"); si está, es la única fuente
+  //   pairRe:  para tiendas que escriben el número al lado de la foto y no en el link: regex sobre el HTML con (link, número)
+  //   listing "sitemap:/sitemap.xml": toma los links del índice para Google (webs armadas con JavaScript)
+  const okHost = h => [host, ...(shop.hosts || [])].some(x => core(x) === core(h));
+  const cre = shop.codeRe ? new RegExp(shop.codeRe, 'i') : null;
+  const add = (c, url) => { const k = c + '|' + url; cnt[k] = (cnt[k] || 0) + 1; if (!prod[c] || cnt[k] > cnt[c + '|' + prod[c]]) prod[c] = url; };
   for (const T of shop.listings) {
+    if (T.startsWith('sitemap:')) {
+      const urls = [], todo = [O + T.slice(8)], seen = new Set();
+      while (todo.length && seen.size < 12) {
+        const u = todo.shift(); if (seen.has(u)) continue; seen.add(u);
+        const r = await get(u); if (!r.html) { if (!firstErr) firstErr = r.status || r.err; continue; }
+        pagesOk++;
+        for (const m of r.html.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)) { const x = m[1].replace(/&amp;/g, '&'); if (/\.xml(\?|$)/i.test(x)) todo.push(x); else urls.push(x); }
+      }
+      for (const url of urls) {
+        let abs; try { abs = new URL(url); } catch { continue; }
+        if (!okHost(abs.host) || /avril|marcela|kaury-?men|kaury-int/i.test(abs.pathname)) continue;
+        const m = cre ? (abs.pathname + abs.search).match(cre) : abs.pathname.match(/(?:kaury|art|ka)-?p?-?(\d{3,4})(?=[-\/k]|$)|(?<![\d])(\d{3,4})-kaury\b/i);
+        if (m) add(m[1] || m[2], abs.origin + abs.pathname + (cre && /\?/.test(shop.codeRe) ? abs.search : ''));
+      }
+      continue;
+    }
     for (let p = 1; p < 16; p++) {
       const u = O + T.replace('{p}', p);
       const r = await get(u);
       if (!r.html) { if (p === 1 && !firstErr) firstErr = r.status || r.err; break; }
       pagesOk++;
       const n = Object.keys(prod).length;
+      if (shop.pairRe) {
+        for (const m of r.html.matchAll(new RegExp(shop.pairRe, 'gi'))) { let abs; try { abs = new URL(m[1].replace(/&amp;/g, '&'), u); } catch { continue; } add(m[2], abs.href); }
+        if (Object.keys(prod).length === n || !T.includes('{p}')) break; else continue;
+      }
       const d = parse(r.html);
       for (const a of d.querySelectorAll('a[href]')) {
         const hr = a.getAttribute('href');
         if (!hr || BAD.test(hr)) continue;
         let abs; try { abs = new URL(hr, u); } catch { continue; }
-        if (core(abs.host) !== core(host)) continue;
+        if (!okHost(abs.host)) continue;
+        if (cre) { const m = (abs.pathname + abs.search).match(cre); if (m && !/avril|marcela/i.test(abs.pathname)) add(m[1], abs.origin + abs.pathname + (/\?/.test(shop.codeRe) ? abs.search : '')); continue; }
         let t = (a.textContent + ' ' + (a.getAttribute('title') || '') + ' ' + a.querySelectorAll('img').map(i => i.getAttribute('alt') || '').join(' '))
           .replace(/\$\s?[\d.,]+|\d+[.,]\d+/g, ' ');
         if (/avril|kaury men/i.test(t)) continue;
@@ -74,10 +103,11 @@ export async function listProducts(shop, CAT) {
   }
   const vals = Object.values(prod);
   let pairs = Object.entries(prod).filter(([k, v]) => CAT.has(k) && (v.includes(k) || vals.filter(x => x === v).length === 1));
+  if (shop.codeRe || shop.pairRe) pairs = Object.entries(prod).filter(([k]) => CAT.has(k));
   // si la mayoría de los links dicen "kaury", descartar los que no
-  if (pairs.filter(([, v]) => KR.test(v)).length >= pairs.length * 0.5) pairs = pairs.filter(([, v]) => KR.test(v));
+  else if (pairs.filter(([, v]) => KR.test(v)).length >= pairs.length * 0.5) pairs = pairs.filter(([, v]) => KR.test(v));
   // descartar links cuyo path tiene otro número de artículo
-  pairs = pairs.filter(([c, v]) => { const path = new URL(v).pathname; if (path.includes(c)) return true; return !(path.match(/(?<!\d)\d{2,4}(?!\d)/g) || []).some(n => n !== c); });
+  if (!shop.codeRe && !shop.pairRe) pairs = pairs.filter(([c, v]) => { const path = new URL(v).pathname; if (path.includes(c)) return true; return !(path.match(/(?<!\d)\d{2,4}(?!\d)/g) || []).some(n => n !== c); });
   return { prods: Object.fromEntries(pairs), pagesOk, err: pagesOk ? null : (firstErr || 'sin respuesta') };
 }
 
@@ -111,6 +141,12 @@ function woo(d) {
     let z = norm((at.find(([k]) => /talle|size|tama/i.test(k)) || [])[1]), c = norm((at.find(([k]) => /colou?r/i.test(k)) || [])[1]);
     if (!z) z = vals.find(a => SZ.test(a)) || ''; if (!c) c = vals.find(a => a !== z) || ''; const sx = Object.entries(x.attributes || {}).filter(([, v]) => v).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&'); return [c.replace(/-/g, ' '), z, !!x.is_in_stock && x.is_purchasable !== false, sx]; });
 }
+// Tiendas Cygnus (lenceriamayorista.com.ar): una casilla por talle y color, con el stock en "max"
+function cygnus(d) {
+  const ins = d.querySelectorAll('input[data-variation-description]'); if (!ins.length) return null;
+  return ins.map(i => { const t = i.getAttribute('data-variation-description') || '', z = (t.match(/talle:\s*([^/]+)/i) || [])[1] || '', c = (t.match(/color:\s*(.+)$/i) || [])[1] || '';
+    return [norm(c), norm(z), +(i.getAttribute('max') || 0) > 0]; });
+}
 function empretienda(h) {
   const m = h.match(/var stock = (\[[\s\S]*?\]);\s*\n?\s*var /); if (!m) return null;
   let v; try { v = JSON.parse(m[1]); } catch { return null; }
@@ -128,6 +164,7 @@ export async function readStock(url) {
   let rows = tiendanube(d); if (rows) return done(pack(rows));
   rows = woo(d); if (rows === 'ajax') return done({ ent: '?', vars: [] }); if (rows) return done(pack(rows));
   rows = empretienda(h); if (rows) return done(pack(rows.map(x => x.slice(0, 3))));
+  rows = cygnus(d); if (rows) return done(pack(rows));
   if (/agotado|sin stock|out of stock/i.test(d.text || '')) return { ent: 0, vars: [] };
   return done({ ent: '?', vars: [] });
 }
@@ -225,4 +262,32 @@ export function makeNormalizer(catalog, sizes) {
   }
   normalize.vars = normVars;
   return normalize;
+}
+
+/** Tiendas que publican sus productos en un servicio de datos (Kaury MDP: kaury-api.vercel.app).
+ *  Devuelve {prods:{código:link}, ent:{código:{color:[talles]}}, err}. */
+export async function apiShop(shop, CAT) {
+  const prods = {}, ent = {}; let err = null;
+  for (let p = 1; p <= 30; p++) {
+    const r = await get(shop.api + 'products?page=' + p + '&limit=50', { timeout: 25000 });
+    if (!r.html) { err = r.status || r.err || 'sin respuesta'; break; }
+    let j; try { j = JSON.parse(r.html); } catch { err = 'json'; break; }
+    const list = (j.data && j.data.products) || [];
+    for (const x of list) {
+      const name = (x.name && x.name.es) || '', cats = (x.categories || []).map(c => (c.name && c.name.es) || '').join(' ');
+      if (/^match|segunda selec/i.test(name) || /avril|match|boxer/i.test(cats)) continue;
+      const code = (name.match(/\b\d{3,4}\b/g) || []).find(c => CAT.has(c)); if (!code || prods[code]) continue;
+      prods[code] = shop.origin + '/producto/' + x.id;
+      const e = {};
+      for (const v of x.variants || []) {
+        if (!(v.stock > 0) && v.stockManagement !== false) continue;
+        const a = v.attr || {}, z = Object.entries(a).find(([k]) => /talle/i.test(k) && !/boxer/i.test(k)), c = a.color || a.Color || '';
+        const zz = norm(z ? z[1] : 'u'), cc = norm(c) || '-'; (e[cc] = e[cc] || []).includes(zz) || e[cc].push(zz);
+      }
+      ent[code] = Object.keys(e).length ? e : 0;
+    }
+    const pg = j.data && j.data.pagination; if (!pg || p >= pg.totalPages || !list.length) break;
+    await sleep(300);
+  }
+  return { prods, ent, err: Object.keys(prods).length ? null : err };
 }

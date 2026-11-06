@@ -4,7 +4,7 @@
 //   FULL=1        fuerza a revisar de nuevo qué artículos tiene cada tienda (si no, se hace 1 vez por hora)
 //   OUT           archivo donde guardar el resultado (opcional)
 import { readFile, writeFile } from 'node:fs/promises';
-import { listProducts, readStock, makeNormalizer, pool, sleep, lastErr } from './lib.mjs';
+import { listProducts, readStock, makeNormalizer, pool, sleep, lastErr, apiShop } from './lib.mjs';
 import { checkMins, priceMoves } from './mins.mjs';
 
 const here = p => new URL('../data/' + p, import.meta.url);
@@ -42,6 +42,15 @@ await pool(Object.entries(shops), 13, async ([key, shop]) => {
   const may = shop.canal === 'may';
   // mayoristas: su stock se revisa una vez por hora (junto con los listados); en las otras pasadas se mantiene
   if (may && !relist) { out.prods[key] = pProds; out.stock[sk] = pStock; out.vars[sk] = pVars; out.status[key] = { ...((prev.status || {})[key] || { ok: true }), may: true }; return; }
+  // tiendas que publican sus datos en un servicio (Kaury MDP): artículos y stock salen de ahí, sin leer páginas
+  if (shop.api) {
+    const A = await apiShop(shop, CAT);
+    if (A.err) { out.prods[key] = pProds; out.stock[sk] = pStock; out.vars[sk] = pVars; out.status[key] = { ok: !!Object.keys(pProds).length, err: 'datos: ' + A.err }; return; }
+    const stock = {}; for (const [c, e] of Object.entries(A.ent)) if (e) stock[c] = normalize(c, e);
+    out.prods[key] = A.prods; out.stock[sk] = stock; out.vars[sk] = {};
+    out.status[key] = { ok: true, arts: Object.keys(A.prods).length, conStock: Object.keys(stock).length, errores: 0, seg: Math.round((Date.now() - t0) / 1000) };
+    return;
+  }
   let prods = pProds;
   if (relist) {
     const L = await listProducts(shop, CAT);

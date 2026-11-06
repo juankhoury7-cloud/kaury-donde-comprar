@@ -180,9 +180,11 @@
   "name": "disriomayorista",
   "origin": "https://disriomayorista.empretienda.com.ar",
   "listings": [
-   "/search?q=kaury&page={p}"
+   "/lenceria/kaury",
+   "/summer-2026-2027/kaury-summer"
   ],
-  "canal": "may"
+  "canal": "may",
+  "codeRe": "/k(\\d{3,4})-"
  },
  "lenceriamayoristaeltrebol.com": {
   "name": "lenceriamayoristaeltrebol",
@@ -214,7 +216,10 @@
   "listings": [
    "/search/?q=kaury&page={p}"
   ],
-  "canal": "may"
+  "canal": "may",
+  "hosts": [
+   "gtlenceria.com.ar"
+  ]
  },
  "intimolingerie.empretienda.com.ar": {
   "name": "intimolingerie",
@@ -230,7 +235,10 @@
   "listings": [
    "/search/?q=kaury&page={p}"
   ],
-  "canal": "may"
+  "canal": "may",
+  "hosts": [
+   "ipanemalenceria.online"
+  ]
  },
  "jimenaviva.com.ar": {
   "name": "jimenaviva",
@@ -276,7 +284,7 @@
   "name": "lencerialoris",
   "origin": "https://lencerialoris.com.ar",
   "listings": [
-   "/productos?search=kaury"
+   "sitemap:/sitemap.xml"
   ],
   "canal": "may"
  },
@@ -284,9 +292,10 @@
   "name": "lenceriamayorista",
   "origin": "https://www.lenceriamayorista.com.ar",
   "listings": [
-   "/Products?manufacturerSelected=1753"
+   "/Products?manufacturerSelected=1753&pageNumber={p}"
   ],
-  "canal": "may"
+  "canal": "may",
+  "codeRe": "/ProductDetail/KAU(\\d{3,4})(?![\\dA-Z])"
  },
  "lenceriamiluna.com": {
   "name": "lenceriamiluna",
@@ -298,9 +307,9 @@
  },
  "lenceriamonique.com": {
   "name": "lenceriamonique",
-  "origin": "https://www.lenceriamonique.com",
+  "origin": "https://lenceriamonique.com",
   "listings": [
-   "/project/kaury"
+   "/marca/kaury/page/{p}/"
   ],
   "canal": "may"
  },
@@ -372,17 +381,19 @@
   "name": "elparaisodepaso",
   "origin": "https://elparaisodepaso.com.ar",
   "listings": [
-   "/productos.php?busca=kaury"
+   "/productos.php?m=51&mf=1&Mayorista=Kaury-Distribuidor"
   ],
-  "canal": "may"
+  "canal": "may",
+  "codeRe": "[?&]id=171-(\\d{3,4})(?![\\dA-Z])"
  },
  "paulinamayorista.com.ar": {
   "name": "paulinamayorista",
-  "origin": "https://www.paulinamayorista.com.ar",
+  "origin": "https://paulinamayorista.com.ar",
   "listings": [
-   "/catalogos.php?idmarca=24&marca=KAURY&idcategoria=0&idtemporada=0"
+   "sitemap:/sitemap.xml"
   ],
-  "canal": "may"
+  "canal": "may",
+  "codeRe": "/ka(\\d{3,4})-"
  },
  "casadieguito.com.ar": {
   "name": "casadieguito",
@@ -396,9 +407,14 @@
   "name": "lenceriaraffi",
   "origin": "https://www.lenceriaraffi.com.ar",
   "listings": [
-   "/principal.php?seccion=202&categoria_id=1&marca_id=17"
+   "/principal.php?seccion=202&categoria_id=23&marca_id=17",
+   "/principal.php?seccion=202&categoria_id=1&marca_id=17",
+   "/principal.php?seccion=202&categoria_id=4&marca_id=17",
+   "/principal.php?seccion=202&categoria_id=6&marca_id=17",
+   "/principal.php?seccion=202&categoria_id=10&marca_id=17"
   ],
-  "canal": "may"
+  "canal": "may",
+  "pairRe": "href=\"(principal\\.php\\?seccion=200&(?:amp;)?producto_id=\\d+)\"(?:(?!producto_id)[\\s\\S]){0,2500}?art\\.?\\s*(\\d{3,4})\\b"
  },
  "lenceriaromini.com.ar": {
   "name": "lenceriaromini",
@@ -438,6 +454,13 @@
   "listings": [
    "/page/{p}/?s=kaury&post_type=product"
   ],
+  "canal": "may"
+ },
+ "mayoristakaurymdp.com": {
+  "name": "kaurymdp",
+  "origin": "https://www.mayoristakaurymdp.com",
+  "listings": [],
+  "api": "https://kaury-api.vercel.app/api/",
   "canal": "may"
  }
 }

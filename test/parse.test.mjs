@@ -111,3 +111,12 @@ console.log('OK');
   assert.deepEqual(readMin(parse(h).text).amts, [100000]);
   console.log('compra mínima en etiquetas separadas OK');
 }
+{ // tienda Cygnus: una casilla por talle y color con el stock en "max"
+  const { parse } = await import('node-html-parser');
+  const h = '<input data-variation-description="TALLE: 85 / COLOR: BLANCO" max="6"><input data-variation-description="TALLE: 90 / COLOR: BLANCO" max="0"><input data-variation-description="TALLE: 90 / COLOR: NEGRO" max="2">';
+  const { readStock } = await import('../scraper/lib.mjs');
+  const orig = globalThis.fetch; globalThis.fetch = async () => new Response(h, { status: 200 });
+  const r = await readStock('https://x.test/ProductDetail/KAU8100'); globalThis.fetch = orig;
+  assert.deepEqual(r.ent, { blanco: ['85'], negro: ['90'] });
+  console.log('cygnus OK');
+}
