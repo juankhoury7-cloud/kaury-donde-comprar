@@ -61,3 +61,24 @@ console.log('OK');
   assert.ok(Object.values(r).every(zs => zs.every(z => !/\s/.test(z))));
   console.log('combinados OK');
 }
+{ // chequeo diario: compra mínima y precios
+  const { readMin, priceMoves } = await import('../scraper/mins.mjs');
+  const { price } = await import('../scraper/lib.mjs');
+  const { parse } = await import('node-html-parser');
+  const t = s => readMin(s);
+  assert.deepEqual(t('Envíos a todo el país. COMPRA MÍNIMA $70.000 en productos surtidos').amts, [70000]);
+  assert.deepEqual(t('La compra mínima es de 50.000 pesos').amts, [50000]);
+  assert.deepEqual(t('Mínimo de compra: $ 120000').amts, [120000]);
+  assert.equal(t('Vendemos por mayor y menor, ¡sin mínimo de compra!').none, true);
+  assert.equal(t('No tenemos monto mínimo').none, true);
+  assert.equal(t('CYBER MONDAY: compra mínima $30.000 solo por hoy').temp, true);
+  assert.equal(t('Compra mínima 6 prendas surtidas').qty, '6 prendas');
+  assert.deepEqual(t('Compra mínima $80.000. Envío gratis desde $150.000').amts, [80000]);
+  assert.deepEqual(t('Remeras $12.000 · Envío gratis desde $100.000').amts, []);
+  assert.deepEqual(priceMoves({ a: { 1: 100, 2: 200, 3: 300 } }, { a: { 1: 60, 2: 120, 3: 180 } }), { a: { pct: -40, n: 3 } });
+  assert.deepEqual(priceMoves({ a: { 1: 100, 2: 200, 3: 300 } }, { a: { 1: 102, 2: 200, 3: 300 } }), {});
+  const h = '<script type="application/ld+json">{"@type":"Product","offers":{"@type":"Offer","price":"15990.00"}}</script>';
+  assert.equal(price(parse(h), h), 15990);
+  const h2 = '<meta property="product:price:amount" content="8.500,50">'; assert.equal(price(parse(h2), h2), 8500.5);
+  console.log('compra mínima y precios OK');
+}

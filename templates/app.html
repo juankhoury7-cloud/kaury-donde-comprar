@@ -308,6 +308,10 @@ a{color:inherit}
 .full{grid-column:1/-1}
 .card h2{font-size:17px;font-weight:800;margin:0}
 .card .d{color:var(--muted);font-size:13px;margin:2px 0 14px}
+.mn{border-top:1px solid var(--line);padding:10px 0;font-size:13.5px;line-height:1.4}.mn b{font-weight:800}.mn small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.mn .st{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:6px;margin-right:6px;vertical-align:1px;background:var(--bg);color:var(--ink2);border:1px solid var(--line)}
+.mn .st.cambio{background:var(--red-soft);color:var(--red-d);border-color:transparent}.mn .st.dudoso,.mn .st.no{background:#fff4d6;color:#7a5a00;border-color:transparent}
+.mnh{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 2px}
 .bars{display:grid;gap:9px}
 .br{display:grid;grid-template-columns:minmax(110px,44%) 1fr 36px;gap:10px;align-items:center;font-size:13px}
 .br .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -393,6 +397,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
       <div class="kpis" style="margin:10px 0 6px"><div class="kpi"><div class="k">Cuentas</div><div class="v" id="aT">0</div><div class="s" id="aT2"></div></div><div class="kpi"><div class="k">Consumidoras</div><div class="v" id="aM">0</div></div><div class="kpi"><div class="k">Revendedoras</div><div class="v" id="aR">0</div></div><div class="kpi"><div class="k">Aceptan novedades</div><div class="v" id="aN">0</div></div></div>
       <p class="d" id="aAl" style="margin-top:6px"></p><div class="bars" id="bAlerts"></div>
       <button type="button" id="csvBtn" style="margin-top:12px;border:0;background:var(--ink);color:#fff;border-radius:12px;padding:11px 16px;font:inherit;font-weight:700;cursor:pointer">Descargar contactos (Excel/CSV)</button></div>
+    <div class="card full" id="minCard" hidden><h2>Mayoristas: compra mínima y precios</h2><p class="d" id="mnSum">Chequeo diario de la web de cada mayorista</p><div id="mnList"></div></div>
     <div class="dgrid">
       <div class="card full"><h2>Búsquedas por día</h2><p class="d">Últimos 14 días · hoy en rojo</p><div class="cols" id="daily"></div><div class="colx" id="dailyx"></div></div>
       <div class="card"><h2>Artículos más buscados</h2><p class="d">Lo que el público pide por número</p><div class="bars" id="bArt"></div></div>
@@ -429,18 +434,20 @@ function nameFix(n){n=String(n).replace(/\s+/g," ").trim();if(n!==n.toUpperCase(
 var STORES=RAW.map(function(r,i){var p=proj(r[8],r[9]),cn=r[12]||"min";return {i:i,id:"s"+i,name:nameFix(r[0]),type:r[1],addr:r[2],city:tc(r[3]),prov:provName(r[4]),ig:r[5],
   rk:r[10]||"",rweb:r[11]||"",wk:r[16]||"",wweb:r[15]||"",canal:cn,minAmt:(r[13]===null||r[13]===undefined)?null:r[13],minTxt:r[14]||"",
   inMin:(cn==="min"||cn==="both")&&!!r[10],inMay:cn==="may"||cn==="both",x:p[0],y:p[1]};});
-STORES.forEach(function(s){s.minEff=s.inMin?0:s.minAmt;});
+STORES.forEach(function(s){s.minAmt0=s.minAmt;s.minTxt0=s.minTxt;});
+/* Solo se muestran los locales con tienda web. MO: compra mínima actualizada por el chequeo diario de cada web mayorista. */
+var MO={};function hostOf(u){try{return new URL(u).host;}catch(e){return ;}}
 /* Cada local junta lo que vende por unidad (min) y por mayor (may): el mapa los muestra todos, rojo = por unidad, negro = solo por mayor. */
 function chOf(s,m){var k=m==="may"?s.wk:s.rk,web=m==="may"?(s.wweb||""):s.rweb;if(!k&&!web)return null;var sk=k.replace(/^www\./,""),pm=PRODS[k]||{},stk=STOCK[sk]||{};
   return {m:m,prod:k?pm:{},stk:k?stk:{},vars:k?(VARS[sk]||{}):{},web:web,vset:new Set(k?Object.keys(stk).filter(function(c){return pm[c];}):[])};}
 function mergeEnt(a,b){if(!a)return b;if(!b)return a;if(a==="?")return b;if(b==="?")return a;var o={};[a,b].forEach(function(e){Object.keys(e).forEach(function(c){var z=o[c]||(o[c]=[]);e[c].forEach(function(x){if(z.indexOf(x)<0)z.push(x);});});});return o;}
 function bindMode(){STORES.forEach(function(s){var chs=[],c;if(s.inMin&&(c=chOf(s,"min")))chs.push(c);if(s.inMay&&(c=chOf(s,"may")))chs.push(c);
-  s.chs=chs;s.on=s.inMin||s.inMay;s.prod={};s.stk={};s.vset=new Set();
+  s.chs=chs;var o=s.wweb&&MO[hostOf(s.wweb)];s.minAmt=o?o.a:s.minAmt0;s.minTxt=o?o.t:s.minTxt0;s.minTmp=!!(o&&o.p);s.minEff=s.inMin?0:s.minAmt;s.prod={};s.stk={};s.vset=new Set();
   chs.slice().reverse().forEach(function(c){Object.assign(s.prod,c.prod);});
   chs.forEach(function(c){c.vset.forEach(function(code){s.vset.add(code);s.stk[code]=mergeEnt(s.stk[code],c.stk[code]);});});
-  s.web=(chs[0]&&chs[0].web)||(chs[1]&&chs[1].web)||"";});
+  s.web=(chs[0]&&chs[0].web)||(chs[1]&&chs[1].web)||"";s.on=(s.inMin||s.inMay)&&!!s.web;});
   stockCache={};}
-function minLabel(s){return s.minAmt===0?"Sin compra mínima":s.minAmt?"Compra mínima "+(s.minTxt||("$"+s.minAmt.toLocaleString("es-AR"))):(s.minTxt&&s.minTxt!=="Consultá condiciones"?"Compra mínima: "+s.minTxt:"Consultá la compra mínima");}
+function minLabel(s){return s.minAmt===0?"Sin compra mínima"+(s.minTmp?" (promo)":""):s.minAmt?"Compra mínima "+(s.minTxt||("$"+s.minAmt.toLocaleString("es-AR"))):(s.minTxt&&s.minTxt!=="Consultá condiciones"?"Compra mínima: "+s.minTxt:"Consultá la compra mínima");}
 var CAT=CAT_RAW.map(function(r){return {code:r[0],name:r[1],line:r[2],colors:r[3].split("|").map(function(c){var k=c.lastIndexOf(":");return {n:c.slice(0,k)||"Único",h:c.slice(k+1)};})};});
 var ART={};CAT.forEach(function(a){ART[a.code]=a;});
 /* Talles de referencia por tipo de prenda (en la versión real salen del catálogo de cada artículo). */
@@ -739,16 +746,18 @@ function shopUrl(ch){
   return {u:ch.web,deep:false,m:ch.m};
 }
 function shopBtn(sh,first){var host=esc(sh.u.replace(/^https?:\/\/(www\.)?/,"").split(/[\/?#]/)[0]),may=sh.m==="may";
-  var t=sh.deep?(may?"Comprar el "+esc(st.code)+" por mayor":"Comprar el "+esc(st.code)+(sh.v?" "+esc(varLabel(sh.v)):"")+" por unidad"):(may?"Ver Kaury en su tienda mayorista":"Ver Kaury en su tienda online");
-  return '<a class="btn red" data-act="web" data-m="'+sh.m+'" href="'+esc(sh.u)+'" target="_blank" rel="noopener" style="flex-direction:column;gap:2px"><span>'+t+' →</span><small style="font-weight:500;opacity:.85;font-size:11.5px">'+host+(may?" · "+esc(minLabelShort(sh.s)):"")+'</small></a>';}
+  var both=sh.m==="both",t=sh.deep?(may?"Comprar el "+esc(st.code)+" por mayor":"Comprar el "+esc(st.code)+(sh.v?" "+esc(varLabel(sh.v)):"")+(both?"":" por unidad")):(may?"Ver Kaury en su tienda mayorista":"Ver Kaury en su tienda online");
+  return '<a class="btn red" data-act="web" data-m="'+sh.m+'" href="'+esc(sh.u)+'" target="_blank" rel="noopener" style="flex-direction:column;gap:2px"><span>'+t+' →</span><small style="font-weight:500;opacity:.85;font-size:11.5px">'+host+(may?" · "+esc(minLabelShort(sh.s)):both?" · por unidad o por mayor"+(sh.s.minAmt?", mínimo por mayor "+esc(sh.s.minTxt||money(sh.s.minAmt)):""):"")+'</small></a>';}
 function minLabelShort(s){return s.minAmt===0?"sin compra mínima":s.minAmt?"mínimo "+(s.minTxt||money(s.minAmt)):"consultá el mínimo";}
 function varLabel(v){return v.c+(v.z&&v.z!=="Único"?" · talle "+v.z:"");}
 function select(id){
   st.sel=id;var s=STORES[+id.slice(1)],a=st.code?ART[st.code]:null,stock=a?stockFor(a.code)[s.id]:null,shops=s.chs.map(shopUrl).filter(Boolean);
-  if(a&&shops.some(function(x){return x.deep;}))shops=shops.filter(function(x){return x.deep;});shops.forEach(function(x){x.s=s;});var shop=shops[0]||null;
+  if(a&&shops.some(function(x){return x.deep;}))shops=shops.filter(function(x){return x.deep;});
+  if(shops.length===2&&hostOf(shops[0].u)===hostOf(shops[1].u)){shops[0].m="both";shops.length=1;}
+  shops.forEach(function(x){x.s=s;});var shop=shops[0]||null;
   var net=s.ig?(/tiktok/.test(s.ig)?"TikTok":/facebook/.test(s.ig)?"Facebook":"Instagram"):"";
   openSheet('<h3>'+esc(s.name)+'</h3><div class="ad">'+esc(s.addr)+' · '+esc(s.city)+(s.prov!=="CABA"&&s.prov!==s.city?", "+esc(s.prov):s.prov==="CABA"?", CABA":"")+'</div>'+
-   '<div class="tags">'+(s.inMin?'<span class="tg red">Minorista · por unidad</span>':'<span class="tg red">Mayorista</span>')+(s.inMay?(s.inMin?'<span class="tg red">También por mayor</span>':'')+'<span class="tg min">'+esc(minLabel(s))+'</span>':'<span class="tg">Sin compra mínima</span>')+'</div>'+
+   '<div class="tags">'+(s.inMin&&s.inMay?'<span class="tg red">Por unidad y por mayor</span>':s.inMin?'<span class="tg red">Minorista · por unidad</span>':'<span class="tg red">Mayorista</span>')+(s.inMay&&!(s.inMin&&s.minAmt===0)?'<span class="tg min">'+esc(minLabel(s))+'</span>':'<span class="tg">Sin compra mínima</span>')+'</div>'+
    (a?'<div class="stock" style="background:#e9f6ee;color:#1f6b3d;margin-top:12px"><b>✓ El '+esc(a.code)+' está publicado en su tienda online.</b><small style="color:#3d7a55">Revisado el '+esc(STOCKAT)+'. El botón te lleva directo a ese artículo'+(shop&&shop.v?' con <b>'+esc(varLabel(shop.v))+'</b> ya elegido':'')+'.</small></div>':'<div class="stock" style="margin-top:12px">'+s.vset.size+' artículos Kaury publicados en su tienda online. Buscá un artículo arriba para ir directo a él.</div>')+
    (stock==="?"?'<div class="stock">Su tienda no muestra el stock por color y talle: miralo en el link.</div>':stock?'<div class="stock">Colores y talles con stock en su tienda online:<div class="grid">'+Object.keys(stock).sort(function(x,y){var sx=st.colors.indexOf(x)>=0?0:1,sy=st.colors.indexOf(y)>=0?0:1;return sx-sy;}).map(function(n){
        var on=!st.colors.length||st.colors.indexOf(n)>=0;
@@ -873,8 +882,21 @@ function loadReal(){
   if(MODE!=="panel"||!PASS){realErr="nodb";drawData();return;}
   var timer=setTimeout(function(){if(!realLoaded){realErr="slow";drawData();}},15000);
   fetch(API+"/admin/events?days=90",{headers:{"Authorization":"Bearer "+encodeURIComponent(PASS)},cache:"no-store"}).then(function(r){if(r.status===401)throw "auth";if(!r.ok)throw "err";return r.json();})
-  .then(function(d){clearTimeout(timer);realLoaded=true;realErr="";realEvents=d.ev||[];realAcc=d.cuentas||null;isAdmin=true;drawData();},function(e){clearTimeout(timer);realErr=e==="auth"?"auth":"err";drawData();if(e==="auth")showPanelLogin("La contraseña ya no es válida.");});
+  .then(function(d){clearTimeout(timer);realLoaded=true;realErr="";realEvents=d.ev||[];realAcc=d.cuentas||null;isAdmin=true;drawData();loadMins();},function(e){clearTimeout(timer);realErr=e==="auth"?"auth":"err";drawData();if(e==="auth")showPanelLogin("La contraseña ya no es válida.");});
 }
+/* Chequeo diario de compra mínima de cada web mayorista (panel). */
+function loadMins(){fetch(API+"/admin/mins",{headers:{"Authorization":"Bearer "+encodeURIComponent(PASS)},cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(d){if(d)drawMins(d);}).catch(function(){});}
+function drawMins(d){var c=$("minCard");c.hidden=false;var m=function(v){return v===null||v===undefined?"sin dato":v===0?"sin mínimo":"$"+v.toLocaleString("es-AR");};
+  if(!d.ts){$("mnSum").textContent="Todavía no corrió el primer chequeo. Se hace una vez por día.";$("mnList").innerHTML="";return;}
+  var cnt={};d.hosts.forEach(function(h){cnt[h.st]=(cnt[h.st]||0)+1;});
+  $("mnSum").textContent="Último chequeo: "+fmtAt(d.ts)+" · "+d.hosts.length+" webs · "+(cnt.ok||0)+" iguales"+(cnt.cambio?" · "+cnt.cambio+" actualizadas":"")+(cnt.dudoso?" · "+cnt.dudoso+" para revisar":"")+(cnt.no?" · "+cnt.no+" no publican el mínimo":"")+(cnt.error?" · "+cnt.error+" no respondieron":"");
+  var ord={cambio:0,dudoso:1,no:2,error:3,ok:4},L={cambio:"Actualizada",dudoso:"Revisar",no:"No lo publica",error:"No respondió",ok:"Igual"};
+  var rows=d.hosts.filter(function(h){return h.st!=="ok";}).sort(function(a,b){return ord[a.st]-ord[b.st];});
+  var html=rows.map(function(h){var mapa=h.amt!==null&&h.amt!==undefined?h.amt:h.base;return '<div class="mn"><span class="st '+h.st+'">'+L[h.st]+'</span><b>'+esc((h.names||[]).join(", ")||h.host)+'</b> · '+esc(h.host)+
+    '<small>Mapa: '+esc(m(mapa))+(h.temp?" (promo)":"")+(h.seen?' · Su web: '+esc(h.seen):'')+(h.why?' · '+esc(h.why):'')+(h.err?' · error '+esc(h.err):'')+'</small>'+(h.snip?'<small>“…'+esc(h.snip)+'…”</small>':'')+'</div>';}).join("");
+  var mv=Object.keys(d.moves||{});if(mv.length)html+='<div class="mnh">Cambios fuertes de precio de ayer a hoy</div>'+mv.map(function(k){var x=d.moves[k];return '<div class="mn"><b>'+esc(k)+'</b> · precios '+(x.pct>0?"+":"")+x.pct+'% (mediana de '+x.n+' artículos Kaury)</div>';}).join("");
+  var lg=(d.log||[]).slice(0,12);if(lg.length)html+='<div class="mnh">Historial</div>'+lg.map(function(x){return '<div class="mn"><small style="margin:0">'+fmtAt(x.ts)+'</small>'+esc((x.names||[]).join(", ")||x.host)+': '+(x.precio!==undefined?'precios '+(x.precio>0?"+":"")+x.precio+'%':esc(m(x.de))+' → '+esc(m(x.a))+(x.temp?' (promo)':'')+(x.why?' · '+esc(x.why):''))+'</div>';}).join("");
+  $("mnList").innerHTML=html||'<div class="mn">Todas las webs muestran la misma compra mínima que el mapa.</div>';}
 /* Stock en vivo: se pide al abrir y cada 5 minutos. */
 var lastStockTs=STOCK_TS,stockApplied=false;
 function ago(ts){var m=Math.max(0,Math.round((Date.now()-ts)/60000));return m<1?"recién":m<60?"hace "+m+" min":m<1440?"hace "+Math.round(m/60)+" h":"hace "+Math.round(m/1440)+" días";}
@@ -882,7 +904,7 @@ function fmtAt(ts){var d=new Date(ts);return d.toLocaleDateString("es-AR",{day:"
 function updLabel(){var el=$("upd");if(!lastStockTs){el.hidden=true;return;}el.hidden=false;var old=Date.now()-lastStockTs>3*3600e3;el.className="upd"+(old?" old":"");el.innerHTML='<i></i><span class="ut">Stock </span>'+ago(lastStockTs);el.title="Stock leído de cada tienda el "+fmtAt(lastStockTs);}
 var loadedAt={};
 function applyStock(d){if(!d||!d.prods||!d.stock||!d.ts)return;var mk=d.m||"all";if(loadedAt[mk]===d.ts){updLabel();return;}loadedAt[mk]=d.ts;lastStockTs=Math.max(lastStockTs||0,d.ts);
-  Object.assign(PRODS,d.prods);Object.assign(STOCK,d.stock);Object.assign(VARS,d.vars||{});STOCKAT=fmtAt(d.ts);stockCache={};
+  Object.assign(PRODS,d.prods);Object.assign(STOCK,d.stock);Object.assign(VARS,d.vars||{});if(d.mo)MO=d.mo;STOCKAT=fmtAt(d.ts);stockCache={};
   bindMode();
   [].forEach.call(document.querySelectorAll(".stAt"),function(e){e.textContent=STOCKAT;});
   updLabel();renderTop();var keep=st.sel;render(false);if(keep&&st.sel===keep)select(keep);if(!$("view-datos").hidden)drawData();}

@@ -7,7 +7,7 @@ let mem = null, memAt = 0, cut = {};
 const KEYS = { min: new Set(), may: new Set() };
 for (const r of stores) { const c = r[12] || 'min'; if (r[10] && (c === 'min' || c === 'both')) KEYS.min.add(r[10]); if (r[16] && (c === 'may' || c === 'both')) KEYS.may.add(r[16]); }
 function subset(full, m) {
-  const d = JSON.parse(full), keep = KEYS[m], o = { v: d.v, ts: d.ts, m, prods: {}, stock: {}, vars: {} };
+  const d = JSON.parse(full), keep = KEYS[m], o = { v: d.v, ts: d.ts, m, prods: {}, stock: {}, vars: {}, mo: d.mo || {} };
   for (const k of keep) { const sk = k.replace(/^www\./, ''); if (d.prods[k]) o.prods[k] = d.prods[k]; if (d.stock[sk]) o.stock[sk] = d.stock[sk]; if (d.vars && d.vars[sk]) o.vars[sk] = d.vars[sk]; }
   return JSON.stringify(o);
 }

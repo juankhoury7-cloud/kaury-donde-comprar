@@ -18,6 +18,8 @@ al artículo en la tienda, con el color y talle que hay en stock.
 
 El mapa pide el stock al abrir y cada 5 minutos. Si una tienda no responde, se mantiene su último dato bueno.
 
+**Chequeo diario de mayoristas** (`scraper/mins.mjs`, una vez cada 24 h dentro de la misma corrida): lee la página principal y las de "cómo comprar" / preguntas frecuentes de cada web mayorista, busca la compra mínima publicada y la compara con la de `data/stores.json`. Si encuentra un único monto distinto lo aplica en el mapa (desde la segunda lectura igual); si es promo (Cyber, Black Friday, "hasta el…") la marca y vuelve sola al valor de siempre cuando desaparece; lo dudoso queda en el panel para revisar. También compara la mediana de los precios de los artículos Kaury de cada tienda con el día anterior y avisa si se movió 15 % o más. El resultado se guarda en `kv('mins')` (no viaja a los visitantes; el mapa solo recibe los montos actualizados en `mo`) y se ve en el panel. Solo se muestran en el mapa los locales con tienda web.
+
 ## Configuración
 
 Cloudflare Pages (proyecto conectado a este repo):

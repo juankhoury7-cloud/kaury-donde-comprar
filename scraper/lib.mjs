@@ -123,12 +123,30 @@ function empretienda(h) {
 export async function readStock(url) {
   const r = await get(url);
   if (!r.html) { if (r.status === 404) return { ent: 0, vars: [] }; const k = r.status || r.err || '?'; lastErr[k] = (lastErr[k] || 0) + 1; return 'E'; }
-  const h = r.html, d = parse(h);
-  let rows = tiendanube(d); if (rows) return pack(rows);
-  rows = woo(d); if (rows === 'ajax') return { ent: '?', vars: [] }; if (rows) return pack(rows);
-  rows = empretienda(h); if (rows) return pack(rows.map(x => x.slice(0, 3)));
+  const h = r.html, d = parse(h), px = price(d, h);
+  const done = o => (px ? Object.assign(o, { price: px }) : o);
+  let rows = tiendanube(d); if (rows) return done(pack(rows));
+  rows = woo(d); if (rows === 'ajax') return done({ ent: '?', vars: [] }); if (rows) return done(pack(rows));
+  rows = empretienda(h); if (rows) return done(pack(rows.map(x => x.slice(0, 3))));
   if (/agotado|sin stock|out of stock/i.test(d.text || '')) return { ent: 0, vars: [] };
-  return { ent: '?', vars: [] };
+  return done({ ent: '?', vars: [] });
+}
+
+// Precio de la página de un artículo (el más bajo publicado): datos estructurados, meta de precio o variantes de Tiendanube.
+export function price(d, h) {
+  const vals = [];
+  const add = v => { const n = typeof v === 'number' ? v : parseFloat(String(v).replace(/[^\d.,]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')); if (n > 50 && n < 1e8) vals.push(n); };
+  for (const sc of d.querySelectorAll('script[type="application/ld+json"]')) {
+    try {
+      const walk = o => { if (!o || typeof o !== 'object') return; if (Array.isArray(o)) return o.forEach(walk);
+        if (o.offers) [].concat(o.offers).forEach(f => { if (f && (f.price || f.lowPrice)) add(f.lowPrice || f.price); });
+        if (o['@graph']) walk(o['@graph']); };
+      walk(JSON.parse(sc.text));
+    } catch {}
+  }
+  if (!vals.length) for (const m of d.querySelectorAll('meta[property="product:price:amount"],meta[property="og:price:amount"],meta[itemprop="price"]')) add(m.getAttribute('content'));
+  if (!vals.length) { const el = d.querySelector('[data-variants]'); if (el) { try { JSON.parse(el.getAttribute('data-variants')).forEach(v => v.price_number && add(v.price_number)); } catch {} } }
+  return vals.length ? Math.min(...vals) : null;
 }
 
 // ---------- normalización de colores y talles contra el catálogo ----------
