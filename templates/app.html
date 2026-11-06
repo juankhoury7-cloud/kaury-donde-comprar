@@ -707,11 +707,12 @@ function push(ev){myEvents.push(ev);if(dbReady)queueWrite();if(!$("view-datos").
 var realEvents=[],realLoaded=false,realErr="",isAdmin=null;
 /* Envío de eventos anónimos a la base (solo en la página pública). */
 var sent=0,sendT=null;
-function queueWrite(){if(MODE!=="public")return;clearTimeout(sendT);sendT=setTimeout(flush,3000);}
-function flush(beacon){if(MODE!=="public"||sent>=myEvents.length)return;var batch=myEvents.slice(sent,sent+50),body=JSON.stringify({sid:SID,ev:batch});sent+=batch.length;
+var MAX_EV=150;
+function queueWrite(){if(MODE!=="public"||sent>=MAX_EV)return;clearTimeout(sendT);sendT=setTimeout(flush,8000);}
+function flush(beacon){if(MODE!=="public"||sent>=myEvents.length||sent>=MAX_EV)return;var batch=myEvents.slice(sent,Math.min(sent+50,MAX_EV)),body=JSON.stringify({sid:SID,ev:batch});sent+=batch.length;
   try{if(beacon===true&&navigator.sendBeacon){navigator.sendBeacon(API+"/ev",new Blob([body],{type:"application/json"}));}
   else fetch(API+"/ev",{method:"POST",headers:{"Content-Type":"application/json"},body:body,keepalive:true}).catch(function(){});}catch(e){}
-  if(sent<myEvents.length)queueWrite();}
+  if(sent<myEvents.length&&sent<MAX_EV)queueWrite();}
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")flush(true);});
 window.addEventListener("pagehide",function(){flush(true);});
 var dbReady=MODE==="public";
@@ -733,9 +734,11 @@ function applyStock(d){if(!d||!d.prods||!d.stock||!d.ts)return;if(d.ts===lastSto
   STORES.forEach(function(s){var r=RAW[s.i],pm=PRODS[r[10]]||{},sk=STOCK[r[10].replace(/^www\./,"")]||{};s.prod=pm;s.stk=sk;s.vset=new Set(Object.keys(sk).filter(function(c){return pm[c];}));});
   [].forEach.call(document.querySelectorAll(".stAt"),function(e){e.textContent=STOCKAT;});
   updLabel();renderTop();var keep=st.sel;render(false);if(keep&&st.sel===keep)select(keep);if(!$("view-datos").hidden)drawData();}
-function pullStock(){fetch(API+"/stock",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(d){if(d)applyStock(d);}).catch(function(){});}
-setInterval(function(){if(document.visibilityState!=="hidden")pullStock();updLabel();},5*60000);
-document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&Date.now()-lastStockTs>5*60000)pullStock();});
+var pulling=false;
+function pullStock(){if(pulling)return;pulling=true;fetch(API+"/stock",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(d){if(d)applyStock(d);}).catch(function(){}).then(function(){pulling=false;});}
+setInterval(function(){if(document.visibilityState!=="hidden"&&Date.now()-lastPull>4.5*60000){lastPull=Date.now();pullStock();}updLabel();},60000);
+var lastPull=Date.now()+Math.random()*30000;
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&Date.now()-lastStockTs>5*60000&&Date.now()-lastPull>60000){lastPull=Date.now();pullStock();}});
 var demoEvents=MODE!=="panel"?[]:(function(){
   var out=[],now=Date.now(),seed=7;function rnd(){seed=(seed*1103515245+12345)&2147483647;return seed/2147483647;}
   var pool=[];FEATURED.forEach(function(c,i){for(var k=0;k<Math.max(1,12-i);k++)pool.push(c);});
@@ -811,7 +814,7 @@ document.addEventListener("pointerdown",function(e){var b=$("shbox");if(!b.hidde
 var isOwner=false,asClient=false;
 function showLogin(msg){if(MODE!=="panel")return;$("login").hidden=false;$("lerr").textContent=msg||"";setTimeout(function(){$("lpass").focus();},50);}
 if(MODE==="panel"){$("login").addEventListener("submit",function(e){e.preventDefault();var v=$("lpass").value.trim();if(!v)return;$("lerr").textContent="Revisando…";
-  fetch(API+"/admin/events?days=1",{headers:{"Authorization":"Bearer "+encodeURIComponent(v)},cache:"no-store"}).then(function(r){if(r.status===401){$("lerr").textContent="Contraseña incorrecta.";return;}if(r.status===503){$("lerr").textContent="Falta configurar la contraseña del panel en Cloudflare.";return;}if(!r.ok){$("lerr").textContent="No se pudo conectar. Probá de nuevo.";return;}
+  fetch(API+"/admin/events?days=1",{headers:{"Authorization":"Bearer "+encodeURIComponent(v)},cache:"no-store"}).then(function(r){if(r.status===401){$("lerr").textContent="Contraseña incorrecta.";return;}if(r.status===429){$("lerr").textContent="Demasiados intentos. Esperá 15 minutos.";return;}if(r.status===503){$("lerr").textContent="Falta configurar la contraseña del panel en Cloudflare.";return;}if(!r.ok){$("lerr").textContent="No se pudo conectar. Probá de nuevo.";return;}
    PASS=v;try{sessionStorage.setItem("kaury_panel",v);}catch(x){}$("login").hidden=true;enterPanel();},function(){$("lerr").textContent="No se pudo conectar. Probá de nuevo.";});});}
 function enterPanel(){isOwner=true;$("ownerNav").hidden=false;$("upd").style.marginLeft="12px";srcReal=true;$("srcReal").setAttribute("aria-pressed","true");$("srcDemo").setAttribute("aria-pressed","false");if(!location.hash)location.hash="#datos";loadReal();route();}
 $("asClient").addEventListener("click",function(){if(MODE==="panel"){window.open("/","_blank");return;}asClient=true;$("ownerNav").hidden=true;if(location.hash==="#datos")location.hash="#mapa";else route();toast("Así ve la página el público. Recargá para volver a ver el panel.");});
