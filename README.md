@@ -10,7 +10,8 @@ al artículo en la tienda, con el color y talle que hay en stock.
 
 | Parte | Dónde corre | Qué hace |
 |---|---|---|
-| `scraper/` | GitHub Actions, cada 5 min | Lee el stock de cada tienda y lo sube a `/api/ingest`. Una vez por hora revisa también qué artículos publica cada tienda. |
+| `cron/` | Cloudflare Worker con Cron Trigger `*/5` | Cada 5 min dispara el workflow de GitHub (secreto `GH_TOKEN`: llave fine-grained solo de este repo, Actions read/write). |
+| `scraper/` | GitHub Actions, disparado por `cron/` | Lee el stock de cada tienda y lo sube a `/api/ingest`. Una vez por hora revisa también qué artículos publica cada tienda. |
 | `functions/` | Cloudflare Pages | `/api/stock` (stock actual), `/api/ev` (búsquedas y clics anónimos), `/api/admin/events` (panel). |
 | `site/` | Cloudflare Pages | Página ya armada. Se regenera con `npm run build`. |
 | D1 | Cloudflare | Base de datos `DB`: tablas `kv` (stock) y `ev` (eventos). Se crean solas. |

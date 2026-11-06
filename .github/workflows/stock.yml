@@ -1,8 +1,7 @@
 name: Actualizar stock
 
+# Lo dispara cada 5 minutos el reloj de Cloudflare (carpeta cron/), o a mano desde la pestaña Actions.
 on:
-  schedule:
-    - cron: '2-59/5 * * * *'   # cada 5 minutos (GitHub puede demorarlo unos minutos)
   workflow_dispatch:
     inputs:
       full:
@@ -12,7 +11,6 @@ on:
 
 permissions:
   contents: read
-  actions: write   # para mantener activo el horario (GitHub lo apaga tras 60 días sin cambios)
 
 concurrency:
   group: stock
@@ -35,10 +33,3 @@ jobs:
           INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
           FULL: ${{ inputs.full && '1' || '' }}
         run: node scraper/run.mjs
-      - name: Mantener activo el horario
-        if: github.event_name == 'schedule'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RUN: ${{ github.run_number }}
-        run: |
-          if [ $((RUN % 2000)) -eq 0 ]; then gh api -X PUT "repos/${{ github.repository }}/actions/workflows/stock.yml/enable"; fi
