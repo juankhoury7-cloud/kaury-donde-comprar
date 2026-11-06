@@ -92,19 +92,19 @@ a{color:inherit}
 .grat{fill:none;stroke:#e2e0db;stroke-width:.6}
 .city{font:600 9.5px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;fill:#8f8d88;paint-order:stroke;stroke:#fff;stroke-width:3px;pointer-events:none}
 .cl{cursor:pointer}
-.cl .core{fill:#fff;stroke:var(--ink);stroke-width:1.6;filter:drop-shadow(0 1px 2px rgba(0,0,0,.22))}
-.cl .lbl{font:800 11.5px/1 var(--sans);fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.cl .core{fill:var(--red);stroke:#fff;stroke-width:2}
+.cl .lbl{font:700 11px/1 var(--sans);fill:#fff;text-anchor:middle;dominant-baseline:central;pointer-events:none}
 .cl .pin{fill:var(--red);stroke:#fff;stroke-width:1.6}
 .cl .pdot{fill:#fff;pointer-events:none}
 .cl .shadow{fill:rgba(0,0,0,.18)}
 .cl.unk .pin{fill:#9a9a9a}
-.cl.unk .core{stroke:#9a9a9a}.cl.unk .lbl{fill:#8a8a8a}
+.cl.unk .core{fill:#9a9a9a}
 .cl .pin.may{fill:var(--ink)}
 .cl.sel .pin,.cl.sel .core{stroke-width:2.6}
 .cl.sel{transform:scale(1.3)}
 .cl:hover .pin{fill:var(--red-d)}
 .cl:hover .pin.may{fill:#3a3a3a}
-.cl:hover .core{fill:#f3f3f3}
+.cl:hover .core{fill:var(--red-d)}
 @media (prefers-reduced-motion:no-preference){.cl.in{animation:pop .5s cubic-bezier(.2,1.4,.4,1) both}@keyframes pop{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:scale(1)}}}
 
 /* buscador flotante */
@@ -740,7 +740,7 @@ function shopUrl(ch){
 }
 function shopBtn(sh,first){var host=esc(sh.u.replace(/^https?:\/\/(www\.)?/,"").split(/[\/?#]/)[0]),may=sh.m==="may";
   var t=sh.deep?(may?"Comprar el "+esc(st.code)+" por mayor":"Comprar el "+esc(st.code)+(sh.v?" "+esc(varLabel(sh.v)):"")+" por unidad"):(may?"Ver Kaury en su tienda mayorista":"Ver Kaury en su tienda online");
-  return '<a class="btn '+(may?"dark":"red")+'" data-act="web" data-m="'+sh.m+'" href="'+esc(sh.u)+'" target="_blank" rel="noopener" style="flex-direction:column;gap:2px"><span>'+t+' →</span><small style="font-weight:500;opacity:.85;font-size:11.5px">'+host+(may?" · "+esc(minLabelShort(sh.s)):"")+'</small></a>';}
+  return '<a class="btn red" data-act="web" data-m="'+sh.m+'" href="'+esc(sh.u)+'" target="_blank" rel="noopener" style="flex-direction:column;gap:2px"><span>'+t+' →</span><small style="font-weight:500;opacity:.85;font-size:11.5px">'+host+(may?" · "+esc(minLabelShort(sh.s)):"")+'</small></a>';}
 function minLabelShort(s){return s.minAmt===0?"sin compra mínima":s.minAmt?"mínimo "+(s.minTxt||money(s.minAmt)):"consultá el mínimo";}
 function varLabel(v){return v.c+(v.z&&v.z!=="Único"?" · talle "+v.z:"");}
 function select(id){
@@ -748,7 +748,7 @@ function select(id){
   if(a&&shops.some(function(x){return x.deep;}))shops=shops.filter(function(x){return x.deep;});shops.forEach(function(x){x.s=s;});var shop=shops[0]||null;
   var net=s.ig?(/tiktok/.test(s.ig)?"TikTok":/facebook/.test(s.ig)?"Facebook":"Instagram"):"";
   openSheet('<h3>'+esc(s.name)+'</h3><div class="ad">'+esc(s.addr)+' · '+esc(s.city)+(s.prov!=="CABA"&&s.prov!==s.city?", "+esc(s.prov):s.prov==="CABA"?", CABA":"")+'</div>'+
-   '<div class="tags">'+(s.inMin?'<span class="tg red">Minorista · por unidad</span>':'<span class="tg blk">Mayorista</span>')+(s.inMay?(s.inMin?'<span class="tg blk">También por mayor</span>':'')+'<span class="tg min">'+esc(minLabel(s))+'</span>':'<span class="tg">Sin compra mínima</span>')+'</div>'+
+   '<div class="tags">'+(s.inMin?'<span class="tg red">Minorista · por unidad</span>':'<span class="tg red">Mayorista</span>')+(s.inMay?(s.inMin?'<span class="tg red">También por mayor</span>':'')+'<span class="tg min">'+esc(minLabel(s))+'</span>':'<span class="tg">Sin compra mínima</span>')+'</div>'+
    (a?'<div class="stock" style="background:#e9f6ee;color:#1f6b3d;margin-top:12px"><b>✓ El '+esc(a.code)+' está publicado en su tienda online.</b><small style="color:#3d7a55">Revisado el '+esc(STOCKAT)+'. El botón te lleva directo a ese artículo'+(shop&&shop.v?' con <b>'+esc(varLabel(shop.v))+'</b> ya elegido':'')+'.</small></div>':'<div class="stock" style="margin-top:12px">'+s.vset.size+' artículos Kaury publicados en su tienda online. Buscá un artículo arriba para ir directo a él.</div>')+
    (stock==="?"?'<div class="stock">Su tienda no muestra el stock por color y talle: miralo en el link.</div>':stock?'<div class="stock">Colores y talles con stock en su tienda online:<div class="grid">'+Object.keys(stock).sort(function(x,y){var sx=st.colors.indexOf(x)>=0?0:1,sy=st.colors.indexOf(y)>=0?0:1;return sx-sy;}).map(function(n){
        var on=!st.colors.length||st.colors.indexOf(n)>=0;
