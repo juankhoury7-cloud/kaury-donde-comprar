@@ -471,7 +471,8 @@ function stockFor(code){
 var HEX={};CAT.forEach(function(a){a.colors.forEach(function(c){if(!HEX[c.n])HEX[c.n]=c.h;});});
 function colorsFor(a){var seen={},out=[];a.colors.forEach(function(c){seen[c.n]=1;out.push(c);});var sk=stockFor(a.code);
   Object.keys(sk).forEach(function(id){var e=sk[id];if(e&&e!=="?")Object.keys(e).forEach(function(n){if(!seen[n]){seen[n]=1;out.push({n:n,h:HEX[n]||"#cfcfcf"});}});});return out;}
-function sizesAll(a){var seen={},out=a.sizes.slice();out.forEach(function(z){seen[z]=1;});var sk=stockFor(a.code);
+/* Talles: solo los oficiales de kaury.com (las tiendas que numeran distinto se traducen al leer el stock). */
+function sizesAll(a){if(SIZES[a.code])return a.sizes.slice();var seen={},out=a.sizes.slice();out.forEach(function(z){seen[z]=1;});var sk=stockFor(a.code);
   Object.keys(sk).forEach(function(id){var e=sk[id];if(e&&e!=="?")Object.keys(e).forEach(function(n){e[n].forEach(function(z){if(!seen[z]&&/^([0-9]{1,3}|[A-Z]{1,4}(-[A-Z]{1,4})?|Único)$/.test(z)){seen[z]=1;out.push(z);}});});});return out;}
 var st={code:"",colors:[],sizes:[],prov:"",type:"",web:false,conf:false,sel:"",canal:"",minLo:0,minMax:null,curva:false};
 /* Rango de compra mínima. Los locales que venden por unidad cuentan como $0. minMax=null significa "sin tope"; minMax=0, "solo sin mínimo". */

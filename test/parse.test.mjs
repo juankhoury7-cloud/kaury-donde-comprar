@@ -46,7 +46,7 @@ assert.deepEqual(N.vars('4030', s1.vars), { 'Nude|90': 'variant=111', 'Negro|100
 const s2 = await readStock('https://a.test/productos/kaury-articulo-8165/');
 console.log('woo', s2.ent, N('8165', s2.ent), N.vars('8165', s2.vars));
 assert.deepEqual(s2.ent, { 'rosa viejo': ['2'], amafl: ['3'], blanco: ['un'] });
-assert.equal(N.vars('8165', s2.vars)['Rosa vintage|2'], 'attribute_pa_color=rosa-viejo&attribute_pa_talle=2');
+assert.equal(N.vars('8165', s2.vars)['Rosa vintage|90'], 'attribute_pa_color=rosa-viejo&attribute_pa_talle=2');
 const s3 = await readStock('https://a.test/productos/emp/');
 console.log('empretienda', s3.ent, N('8165', s3.ent), N.vars('8165', s3.vars));
 assert.equal(N.vars('8165', s3.vars), null);
@@ -81,4 +81,18 @@ console.log('OK');
   assert.equal(price(parse(h), h), 15990);
   const h2 = '<meta property="product:price:amount" content="8.500,50">'; assert.equal(price(parse(h2), h2), 8500.5);
   console.log('compra mínima y precios OK');
+}
+{ // talles propios de cada tienda -> talles oficiales de kaury.com
+  const { makeNormalizer } = await import('../scraper/lib.mjs');
+  const cat = JSON.parse(await readFile(new URL('../data/catalog.json', import.meta.url), 'utf8'));
+  const sz = JSON.parse(await readFile(new URL('../data/sizes.json', import.meta.url), 'utf8'));
+  const N = makeNormalizer(cat, sz);
+  assert.deepEqual(N('8227', { Negro: ['1', '2', '3', '4'] }), { Negro: ['85', '90', '95', '100'] });
+  assert.deepEqual(N('8219', { Negro: ['4', '5', '6'] }), { Negro: ['100', '105', '110'] });
+  assert.deepEqual(N('8183', { Negro: ['3', '4'] }), { Negro: ['L', 'XL'] });
+  assert.deepEqual(N('161', { Negro: ['T2'] }), { Negro: ['2'] });
+  assert.deepEqual(N('8217', { Negro: ['02', '03'] }), { Negro: ['2', '3'] });
+  assert.deepEqual(N('4030', { Negro: ['85', '90'] }), { Negro: ['85', '90'] });
+  assert.deepEqual(N.vars('8227', [['Negro', '2', 'variant=1']]), { 'Negro|90': 'variant=1' });
+  console.log('talles oficiales OK');
 }

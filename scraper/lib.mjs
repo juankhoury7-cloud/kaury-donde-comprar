@@ -185,6 +185,16 @@ export function makeNormalizer(catalog, sizes) {
     if (/^(u|un|nun|unico|unicos|unico max|talle unico)$/.test(s) || /unic|^nun$/.test(s)) return 'Único';
     return s.replace(/\//g, '-').replace(/\s*-\s*/g, '-').toUpperCase();
   }
+  // Talle oficial de kaury.com: algunas tiendas numeran a su manera ("1-2-3-4" en corpiños = 85-90-95-100, "T2", "02").
+  function official(code, Z) {
+    const order = sizes[code]; if (!order || !order.length || order.includes(Z)) return Z;
+    const z2 = Z.replace(/^T\.?\s?/, '').replace(/^0+(\d)/, '$1');
+    if (order.includes(z2)) return z2;
+    const n = /^\d$/.test(z2) ? +z2 : 0;
+    if (n && order.every(x => /^\d{2,3}$/.test(x) && +x >= 80)) { const v = String(80 + 5 * n); if (order.includes(v)) return v; }
+    if (n && order.every(x => /^[A-Z]{1,3}(-[A-Z]{1,3})?$/.test(x)) && n <= order.length) return order[n - 1];
+    return Z;
+  }
   // Algunas tiendas cargan talle y color juntos en una sola opción ("100 Rojo", "95 Gris humo"): se separan.
   const SZ1 = /^(\d{1,3}|xxs|xs|s|m|l|xl|xxl|xxxl|[sml]-[mlx]+l?)\s+([a-záéíóúñ].*)$/i;
   function split(c, z) {
@@ -195,7 +205,7 @@ export function makeNormalizer(catalog, sizes) {
   }
   /** [[colorCrudo, talleCrudo, sufijo]] -> {"Color|Talle": sufijo} con los nombres del catálogo */
   function normVars(code, vars) {
-    const o = {}; for (const [c0, z0, sx] of vars || []) { const [c, z] = split(c0, z0), k = color(code, c) + '|' + size(z); if (!(k in o)) o[k] = sx; }
+    const o = {}; for (const [c0, z0, sx] of vars || []) { const [c, z] = split(c0, z0), k = color(code, c) + '|' + official(code, size(z)); if (!(k in o)) o[k] = sx; }
     return Object.keys(o).length ? o : null;
   }
   /** {colorCrudo:[tallesCrudos]} -> {ColorCatálogo:[Talles ordenados]} */
@@ -204,7 +214,7 @@ export function makeNormalizer(catalog, sizes) {
     const out = {};
     for (const [c0, zs] of Object.entries(ent)) {
       for (const z0 of zs) {
-        const [c, z] = split(c0, z0), lab = color(code, c), Z = size(z);
+        const [c, z] = split(c0, z0), lab = color(code, c), Z = official(code, size(z));
         (out[lab] = out[lab] || []).includes(Z) || out[lab].push(Z);
       }
     }
