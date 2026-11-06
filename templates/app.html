@@ -576,7 +576,7 @@ function renderSum(vis){
   var a=st.code?ART[st.code]:null,el=$("sum");
   if(!a){el.className="sum";el.innerHTML='<b>'+vis.length+'</b><span class="s">locales'+esc(canalTxt())+(st.prov?" en "+esc(st.prov):" en todo el país")+lgd(vis)+'<button type="button" class="lstb">Ver lista por compra mínima ›</button></span>';}
   else if(!vis.length){var al=alternatives(a);el.className="sum zero";
-    el.innerHTML='<span class="s"><b>No hay</b> el '+esc(a.code)+esc(selDesc())+(st.curva?' en curva completa':'')+(st.prov?" en "+esc(st.prov):"")+' en ninguna tienda hoy.'+(al.length?' Pero hay:':' Probá sin filtros.')+'</span>'+
+    el.innerHTML='<span class="s"><b>No hay</b> el '+esc(a.code)+esc(selDesc())+(st.curva?' en curva completa':'')+(st.prov?" en "+esc(st.prov):"")+' en ninguna tienda'+(st.canal==="min"?' que venda por unidad':st.canal==="may"?' mayorista'+(minActive()?' con ese mínimo':''):'')+' hoy.'+(al.length?' Pero hay:':' Probá sin filtros.')+'</span>'+
       (al.length?'<div class="alts">'+al.map(function(x,i){return '<button type="button" class="alt" data-i="'+i+'">'+(x.c&&x.c.length===1?'<span class="dot" style="background:'+(HEX[x.c[0]]||"#cfcfcf")+'"></span>':'')+esc(x.label)+' <i>'+x.n+'</i></button>';}).join("")+'</div>':'')+
       (ACCOUNTS?(hasAlert(curAlert())?'<button type="button" class="ntf on">✓ Te avisamos por mail cuando haya</button>':'<button type="button" class="ntf">🔔 Avisame cuando haya</button>'):'');
     el._alts=al;}
@@ -584,13 +584,15 @@ function renderSum(vis){
   el.hidden=!$("sheet").hidden;
 }
 $("sum").addEventListener("click",function(e){if(e.target.closest(".ntf")){askAlert();return;}if(e.target.closest(".lstb")){showList(curVis,"min");return;}var b=e.target.closest(".alt");
-  if(b){var x=this._alts[+b.getAttribute("data-i")];if(!x)return;st.colors=x.c;st.sizes=x.z;st.curva=!!x.cv;if(x.allProv)st.prov="";st.sel="";closeSheet();renderTop();render(true);logSearch();return;}
+  if(b){var x=this._alts[+b.getAttribute("data-i")];if(!x)return;st.colors=x.c;st.sizes=x.z;st.curva=!!x.cv;if(x.allCanal){st.canal="";st.minLo=0;st.minMax=null;updBadge();}if(x.allProv)st.prov="";st.sel="";closeSheet();renderTop();render(true);logSearch();return;}
   if(!this.classList.contains("zero"))animateTo(fitTo(curVis),600);});
 /* Sin resultados: proponer lo más cercano que sí hay (otro talle del mismo color, otro color del mismo talle, todo el país). */
 /* cv: contar solo los que tienen la curva completa (todos los talles) en esos colores */
 function countFor(colors,sizes,allProv,cv){var stock=stockFor(st.code);return STORES.filter(function(s){if(!s.on)return false;if(!minOK(s))return false;if(!allProv&&st.prov&&s.prov!==st.prov)return false;return cv?curvaOK(stock[s.id],colors):matchEnt(stock[s.id],colors,sizes);}).length;}
 function alternatives(a){var out=[],seen={},CV=st.curva;function add(c,z,label,allProv,cv){var k=c.join("+")+"|"+z.join("+")+"|"+(allProv?1:0)+"|"+(cv?1:0);if(seen[k])return;var n=countFor(c,z,allProv,cv);if(n){seen[k]=1;out.push({c:c,z:z,label:label,n:n,allProv:allProv,cv:cv});}}
   var C=st.colors,Z=st.sizes,cols=colorsFor(a).map(function(x){return x.n;}),szs=sizesAll(a),cand=[];
+  if(st.canal){var keep=[st.canal,st.minLo,st.minMax];st.canal="";var n0=countFor(C,Z,false,CV);st.canal=keep[0];
+    if(n0){seen.cn=1;out.push({c:C,z:Z,label:keep[0]==="min"?"Incluyendo mayoristas":"Incluyendo por unidad",n:n0,cv:CV,allCanal:true});}}
   if(st.prov){add(C,Z,"En todo el país",true,CV);}
   if(Z.length){szs.forEach(function(z){if(Z.indexOf(z)<0)cand.push({c:C,z:[z],label:(C.length?joinO(C)+" ":"")+"talle "+z});});}
   if(C.length){cols.forEach(function(c){if(C.indexOf(c)<0)cand.push({c:[c],z:Z,cv:CV,label:c+(CV?" en curva completa":Z.length?" talle "+joinO(Z):"")});});}
