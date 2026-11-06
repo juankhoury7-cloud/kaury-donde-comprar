@@ -107,11 +107,15 @@ a{color:inherit}
 .top{position:absolute;left:12px;right:12px;top:12px;z-index:10;display:grid;grid-template-columns:minmax(0,1fr);gap:8px;max-width:520px;pointer-events:none}
 .ibtn[hidden],.art[hidden],.sbox input[hidden]{display:none}
 .top>*{pointer-events:auto}
-.modo{justify-self:start;display:inline-flex;background:var(--white);border:1px solid var(--line);border-radius:99px;box-shadow:var(--sh);padding:3px}
+.modorow{display:flex;gap:8px;align-items:center;min-width:0}
+.fpill{flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid var(--line);background:var(--white);box-shadow:var(--sh);border-radius:99px;padding:9px 13px;font:inherit;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer}
+.fpill .sm2{display:none}@media (max-width:400px){.fpill .lg2{display:none}.fpill .sm2{display:inline}}
+.fpill.on{background:var(--red);border-color:var(--red);color:#fff}
+.modo{flex:0 0 auto;justify-self:start;display:inline-flex;background:var(--white);border:1px solid var(--line);border-radius:99px;box-shadow:var(--sh);padding:3px}
 .modo button{border:0;background:none;border-radius:99px;padding:7px 14px;font:inherit;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}
 .modo button[aria-pressed="true"]{background:var(--ink);color:#fff}
 .chip.curva{border-color:var(--red);color:var(--red);font-weight:800}.chip.curva[aria-pressed="true"]{background:var(--red);color:#fff}
-.top.typing .modo{visibility:hidden}
+.top.typing .modorow{visibility:hidden}
 .tg.min{background:#fff4d6;color:#7a5a00}
 .mrv{font-weight:800;font-size:16px;margin-bottom:8px}
 .dual{position:relative;height:30px;margin:0 4px}.dual .trk{position:absolute;left:0;right:0;top:13px;height:4px;border-radius:2px;background:var(--line2)}.dual .fill{position:absolute;top:0;bottom:0;background:var(--red);border-radius:2px}
@@ -342,7 +346,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   </svg>
 
   <div class="top">
-    <div class="modo" id="modo" role="group" aria-label="Cómo comprás"><button type="button" data-m="min">Por unidad</button><button type="button" data-m="may">Por mayor</button></div>
+    <div class="modorow"><div class="modo" id="modo" role="group" aria-label="Cómo comprás"><button type="button" data-m="min">Por unidad</button><button type="button" data-m="may">Por mayor</button></div><button type="button" class="fpill" id="fPill"></button></div>
     <div class="sbox" id="sbox">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" placeholder="Buscá un artículo, ej. 4030" autocomplete="off" inputmode="search" enterkeyhint="search" aria-label="Número o nombre del artículo" aria-controls="sugg" aria-autocomplete="list">
@@ -770,7 +774,12 @@ $("filtBtn").addEventListener("click",function(){
   $("fOk").addEventListener("click",function(){closeSheet();render(true);if(st.code&&st.prov)logSearch();});
   Array.prototype.forEach.call(sheet.querySelectorAll("[data-z]"),function(b){b.addEventListener("click",function(){var z=ZONES[+b.getAttribute("data-z")][1],a=proj(z[0],z[1]),c=proj(z[2],z[3]);closeSheet();render(false);animateTo(fitBox(Math.min(a[0],c[0]),Math.min(a[1],c[1]),Math.max(a[0],c[0]),Math.max(a[1],c[1])),700);});});
 });
-function updBadge(){var n=(st.prov?1:0)+(minActive()?1:0),b=$("fBadge");b.textContent=n;b.hidden=!n;}
+function kfmt(v){return v>=1000?"$"+(v/1000).toLocaleString("es-AR")+"k":"$"+v;}
+function updBadge(){var n=(st.prov?1:0)+(minActive()?1:0),b=$("fBadge");b.textContent=n;b.hidden=!n;
+  var f=$("fPill");if(!f)return;var txt,on=false;
+  if(MODO==="may"){on=minActive();txt=on?esc(st.minLo&&st.minHi?kfmt(st.minLo)+"–"+kfmt(st.minHi):st.minHi?"Hasta "+kfmt(st.minHi):"Desde "+kfmt(st.minLo)):'<span class="lg2">Compra mínima</span><span class="sm2">Mínimo</span>';}
+  else{on=!!st.prov;txt=st.prov?esc(st.prov):"Provincia";}
+  f.innerHTML=txt+" ▾";f.classList.toggle("on",on);f.setAttribute("aria-label",MODO==="may"?"Filtrar por compra mínima":"Filtrar por provincia");}
 var tt;function toast(t){var el=$("toast");el.textContent=t;el.hidden=false;clearTimeout(tt);tt=setTimeout(function(){el.hidden=true;},4500);}
 
 /* ---------- tiras de chips: flechas, degradado, rueda y arrastre ---------- */
@@ -942,8 +951,9 @@ function paintModo(){[].forEach.call(document.querySelectorAll("#modo button"),f
   $("canalLbl").textContent=MODO==="may"?"Venta mayorista":"Venta minorista";document.title=MODO==="may"?"Kaury · Dónde comprar · Venta mayorista":"Kaury · Dónde comprar · Venta minorista";}
 function setModo(m,silent){if(m!=="may")m="min";if(m===MODO&&!silent){return;}MODO=m;try{localStorage.setItem("kaury_modo",m);}catch(e){}
   if(m==="min"){st.minLo=0;st.minHi=0;st.curva=false;}bindMode();paintModo();st.sel="";closeSheet();renderTop();render(true);updBadge();if(!loadedAt[m])pullStock();}
+$("fPill").addEventListener("click",function(){$("filtBtn").click();});
 $("modo").addEventListener("click",function(e){var b=e.target.closest("button[data-m]");if(b)setModo(b.getAttribute("data-m"));});
-paintModo();
+paintModo();updBadge();
 
 /* ---------- cuentas: entrar con Google, "Avisame cuando haya" ---------- */
 var ACCOUNTS=MODE==="public"&&!!GCID,me=null,myAlerts=[],pendingAlert=null,gisLoading=null;
