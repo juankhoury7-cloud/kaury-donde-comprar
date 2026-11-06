@@ -489,7 +489,7 @@ function kindTxt(s){return s.inMin&&s.inMay?"Por unidad y por mayor":s.inMin?"Po
 function matchEnt(ent,colors,sizes){if(!ent)return false;if(ent==="?")return !colors.length&&!sizes.length;var cs=colors.length?colors:Object.keys(ent);
   return cs.some(function(c){var zs=ent[c];return !!zs&&(!sizes.length||sizes.some(function(z){return zs.indexOf(z)>=0;}));});}
 /* Curva completa: el local tiene todos los talles del artículo en alguno de los colores elegidos. */
-function curvaOK(ent){var a=ART[st.code];if(!ent||ent==="?"||!a)return false;var cs=st.colors.length?st.colors:Object.keys(ent);
+function curvaOK(ent,colors){var a=ART[st.code],C=colors||st.colors;if(!ent||ent==="?"||!a)return false;var cs=C.length?C:Object.keys(ent);
   return cs.some(function(c){return ent[c]&&a.sizes.every(function(z){return ent[c].indexOf(z)>=0;});});}
 function joinO(arr){return arr.length<2?(arr[0]||""):arr.slice(0,-1).join(", ")+" o "+arr[arr.length-1];}
 function selDesc(){var d="";if(st.colors.length)d+=" en "+joinO(st.colors.map(function(c){return c.toLowerCase();}));if(st.sizes.length)d+=", talle "+joinO(st.sizes);return d;}
@@ -584,18 +584,20 @@ function renderSum(vis){
   el.hidden=!$("sheet").hidden;
 }
 $("sum").addEventListener("click",function(e){if(e.target.closest(".ntf")){askAlert();return;}if(e.target.closest(".lstb")){showList(curVis,"min");return;}var b=e.target.closest(".alt");
-  if(b){var x=this._alts[+b.getAttribute("data-i")];if(!x)return;st.colors=x.c;st.sizes=x.z;if(x.allProv)st.prov="";st.sel="";closeSheet();renderTop();render(true);logSearch();return;}
+  if(b){var x=this._alts[+b.getAttribute("data-i")];if(!x)return;st.colors=x.c;st.sizes=x.z;st.curva=!!x.cv;if(x.allProv)st.prov="";st.sel="";closeSheet();renderTop();render(true);logSearch();return;}
   if(!this.classList.contains("zero"))animateTo(fitTo(curVis),600);});
 /* Sin resultados: proponer lo más cercano que sí hay (otro talle del mismo color, otro color del mismo talle, todo el país). */
-function countFor(colors,sizes,allProv){var stock=stockFor(st.code);return STORES.filter(function(s){if(!s.on)return false;if(!minOK(s))return false;if(!allProv&&st.prov&&s.prov!==st.prov)return false;return matchEnt(stock[s.id],colors,sizes);}).length;}
-function alternatives(a){var out=[],seen={};function add(c,z,label,allProv){var k=c.join("+")+"|"+z.join("+")+"|"+(allProv?1:0);if(seen[k])return;var n=countFor(c,z,allProv);if(n){seen[k]=1;out.push({c:c,z:z,label:label,n:n,allProv:allProv});}}
+/* cv: contar solo los que tienen la curva completa (todos los talles) en esos colores */
+function countFor(colors,sizes,allProv,cv){var stock=stockFor(st.code);return STORES.filter(function(s){if(!s.on)return false;if(!minOK(s))return false;if(!allProv&&st.prov&&s.prov!==st.prov)return false;return cv?curvaOK(stock[s.id],colors):matchEnt(stock[s.id],colors,sizes);}).length;}
+function alternatives(a){var out=[],seen={},CV=st.curva;function add(c,z,label,allProv,cv){var k=c.join("+")+"|"+z.join("+")+"|"+(allProv?1:0)+"|"+(cv?1:0);if(seen[k])return;var n=countFor(c,z,allProv,cv);if(n){seen[k]=1;out.push({c:c,z:z,label:label,n:n,allProv:allProv,cv:cv});}}
   var C=st.colors,Z=st.sizes,cols=colorsFor(a).map(function(x){return x.n;}),szs=sizesAll(a),cand=[];
-  if(st.prov){add(C,Z,"En todo el país",true);}
+  if(st.prov){add(C,Z,"En todo el país",true,CV);}
   if(Z.length){szs.forEach(function(z){if(Z.indexOf(z)<0)cand.push({c:C,z:[z],label:(C.length?joinO(C)+" ":"")+"talle "+z});});}
-  if(C.length){cols.forEach(function(c){if(C.indexOf(c)<0)cand.push({c:[c],z:Z,label:c+(Z.length?" talle "+joinO(Z):"")});});}
-  cand.forEach(function(x){x.n=countFor(x.c,x.z,false);});
-  cand.filter(function(x){return x.n;}).sort(function(x,y){return y.n-x.n;}).slice(0,4).forEach(function(x){add(x.c,x.z,x.label,false);});
-  if(!out.length&&(C.length||Z.length))add([],[],"Todos los colores y talles",false);
+  if(C.length){cols.forEach(function(c){if(C.indexOf(c)<0)cand.push({c:[c],z:Z,cv:CV,label:c+(CV?" en curva completa":Z.length?" talle "+joinO(Z):"")});});}
+  cand.forEach(function(x){x.n=countFor(x.c,x.z,false,x.cv);});
+  cand.filter(function(x){return x.n;}).sort(function(x,y){return y.n-x.n;}).slice(0,4).forEach(function(x){add(x.c,x.z,x.label,false,x.cv);});
+  if(CV)add(C,[],(C.length?joinO(C)+" en ":"En ")+"talles sueltos",false,false);
+  if(!out.length&&(C.length||Z.length||CV))add([],[],"Todos los colores y talles",false,false);
   return out.slice(0,5);}
 
 /* ---------- mapa ---------- */
