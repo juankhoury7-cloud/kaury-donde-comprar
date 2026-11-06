@@ -40,10 +40,11 @@ async function readHost(origin) {
   const home = await get(origin + '/', { tries: 2 });
   if (!home.html) return { err: String(home.status || home.err || 'sin respuesta') };
   const d = parse(home.html), pages = [d.text + ' ' + (d.querySelector('meta[name="description"]')?.getAttribute('content') || '')];
-  const host = new URL(home.url || origin).host, seen = new Set();
+  // la web puede redirigir (p. ej. a www.): los links se resuelven contra la dirección final y se aceptan con o sin www
+  const base = home.url || origin + '/', bare = h => h.replace(/^www\./, ''), host = bare(new URL(base).host), seen = new Set();
   const links = d.querySelectorAll('a[href]').map(a => ({ h: a.getAttribute('href'), t: nz(a.text) + ' ' + nz(a.getAttribute('href')) }))
-    .filter(x => LINK.test(x.t)).map(x => { try { return new URL(x.h, origin + '/').href.split('#')[0]; } catch { return null; } })
-    .filter(u => u && new URL(u).host === host && !seen.has(u) && seen.add(u)).slice(0, 3);
+    .filter(x => LINK.test(x.t)).map(x => { try { return new URL(x.h, base).href.split('#')[0]; } catch { return null; } })
+    .filter(u => u && bare(new URL(u).host) === host && !seen.has(u) && seen.add(u)).slice(0, 4);
   for (const u of links) { await sleep(400); const r = await get(u, { tries: 2 }); if (r.html) pages.push(parse(r.html).text); }
   return readMin(pages.join(' \n '));
 }

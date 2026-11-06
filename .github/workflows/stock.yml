@@ -8,6 +8,10 @@ on:
         description: 'Revisar también qué artículos tiene cada tienda'
         type: boolean
         default: false
+      mins:
+        description: 'Revisar ya la compra mínima de los mayoristas (si no, una vez por día)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -32,4 +36,5 @@ jobs:
           SITE_URL: ${{ vars.SITE_URL || 'https://kaury-donde-comprar.pages.dev' }}
           INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
           FULL: ${{ inputs.full && '1' || '' }}
+          MINS: ${{ inputs.mins && '1' || '' }}
         run: node scraper/run.mjs

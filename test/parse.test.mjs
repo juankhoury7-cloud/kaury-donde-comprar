@@ -105,3 +105,9 @@ console.log('OK');
   assert.deepEqual(N('134', { 'unico': ['u'] }), { 'Único': ['Único'] });
   console.log('packs OK');
 }
+{ // web armada con etiquetas separadas y espacio duro: "Compra mínima" / "$&nbsp;100.000"
+  const { readMin } = await import('../scraper/mins.mjs'); const { parse } = await import('node-html-parser');
+  const h = '<div><span>Compra mínima</span><span class="x">$&nbsp;100.000</span></div><p>Te faltan $&nbsp;100.000 para la compra mínima.</p>';
+  assert.deepEqual(readMin(parse(h).text).amts, [100000]);
+  console.log('compra mínima en etiquetas separadas OK');
+}
