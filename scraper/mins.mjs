@@ -46,7 +46,8 @@ async function readHost(origin) {
     .filter(x => LINK.test(x.t)).map(x => { try { return new URL(x.h, base).href.split('#')[0]; } catch { return null; } })
     .filter(u => u && bare(new URL(u).host) === host && !seen.has(u) && seen.add(u)).slice(0, 4);
   for (const u of links) { await sleep(400); const r = await get(u, { tries: 2 }); if (r.html) pages.push(parse(r.html).text); }
-  return readMin(pages.join(' \n '));
+  const all = pages.join(' \n ');
+  return Object.assign(readMin(all), { len: all.replace(/\s+/g, ' ').trim().length });
 }
 
 /**
@@ -63,8 +64,9 @@ export async function checkMins(hosts, prev = {}) {
     try { r = await readHost(h.origin); } catch (e) { r = { err: String(e.message || e) }; }
     if (r.err) { Object.assign(o, { st: 'error', err: r.err }); res[host] = o; return; }
     o.snip = r.snip.slice(0, 240);
-    // si la web muestra varios montos (por ejemplo, primera compra y siguientes) se toma el más bajo
-    const vals = r.none ? [0] : r.amts.length ? [Math.min(...r.amts)] : [];
+    // si la web muestra varios montos: si uno es el que ya teníamos, se mantiene; si no, se toma el más bajo
+    const pick = r.amts.includes(h.base) ? h.base : r.amts.includes(cur) ? cur : Math.min(...r.amts);
+    const vals = r.none ? [0] : r.amts.length ? [pick] : [];
     o.seen = r.none ? 'sin mínimo' : r.amts.length ? r.amts.map(money).join(' / ') : r.qty ? 'mínimo ' + r.qty : '';
     const set = (amt, txt, temp, why) => {
       const was = cur;
@@ -88,7 +90,7 @@ export async function checkMins(hosts, prev = {}) {
       // no publica el mínimo: si teníamos una promo temporal, se vuelve al de siempre; si no, queda para revisar
       if (o.temp) { set(h.base, '', false, 'terminó la promo'); o.st = 'cambio'; }
       else if (cur === 0) o.st = 'ok';   // ya figuraba sin mínimo y su web no menciona ninguno
-      else { o.st = 'no'; o.why = 'no encontré la compra mínima en su web'; }
+      else { o.st = 'no'; o.why = r.len < 600 ? 'su web se arma con JavaScript y no se puede leer sola: queda el valor cargado a mano' : 'no encontré la compra mínima en su web'; }
     }
     res[host] = o;
   });
