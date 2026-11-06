@@ -5,7 +5,7 @@
   "scripts": {
     "stock": "node scraper/run.mjs",
     "build": "node scripts/build-site.mjs",
-    "test": "node test/parse.test.mjs"
+    "test": "node test/parse.test.mjs && node test/server.test.mjs"
   },
   "dependencies": {
     "node-html-parser": "^6.1.13"
