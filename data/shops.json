@@ -95,5 +95,349 @@
   "listings": [
    "/page/{p}/?s=kaury&post_type=product"
   ]
+ },
+ "lenceriazoeyamal.mitiendanube.com": {
+  "name": "lenceriazoeyamal",
+  "origin": "https://lenceriazoeyamal.mitiendanube.com",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "besol.com.ar": {
+  "name": "besol",
+  "origin": "https://www.besol.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "indigolenceria.com.ar": {
+  "name": "indigolenceria",
+  "origin": "https://www.indigolenceria.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "casajonas.com.ar": {
+  "name": "casajonas",
+  "origin": "https://www.casajonas.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "lenceria-mayorista.com": {
+  "name": "lenceria-mayorista",
+  "origin": "https://www.lenceria-mayorista.com",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "casamario.com.ar": {
+  "name": "casamario",
+  "origin": "https://www.casamario.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "casamedhil.com.ar": {
+  "name": "casamedhil",
+  "origin": "https://casamedhil.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "casapablomayorista.com.ar": {
+  "name": "casapablomayorista",
+  "origin": "https://casapablomayorista.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "casayonimayorista.com.ar": {
+  "name": "casayonimayorista",
+  "origin": "https://casayonimayorista.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "cathalenceria.com.ar": {
+  "name": "cathalenceria",
+  "origin": "https://www.cathalenceria.com.ar",
+  "listings": [
+   "/shop?marca=KAURY"
+  ],
+  "canal": "may"
+ },
+ "disriomayorista.empretienda.com.ar": {
+  "name": "disriomayorista",
+  "origin": "https://disriomayorista.empretienda.com.ar",
+  "listings": [
+   "/search?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "lenceriamayoristaeltrebol.com": {
+  "name": "lenceriamayoristaeltrebol",
+  "origin": "https://lenceriamayoristaeltrebol.com",
+  "listings": [
+   "/productos/?brand=Kaury"
+  ],
+  "canal": "may"
+ },
+ "elladecideonline.mitiendanube.com": {
+  "name": "elladecideonline",
+  "origin": "https://elladecideonline.mitiendanube.com",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "frankielenceriamayorista.com": {
+  "name": "frankielenceriamayorista",
+  "origin": "https://frankielenceriamayorista.com",
+  "listings": [
+   "/page/{p}/?s=kaury&post_type=product"
+  ],
+  "canal": "may"
+ },
+ "gtmayorista.com": {
+  "name": "gtmayorista",
+  "origin": "https://www.gtmayorista.com",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "intimolingerie.empretienda.com.ar": {
+  "name": "intimolingerie",
+  "origin": "https://intimolingerie.empretienda.com.ar",
+  "listings": [
+   "/search?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "ipanemalenceria.com": {
+  "name": "ipanemalenceria",
+  "origin": "https://ipanemalenceria.com",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "jimenaviva.com.ar": {
+  "name": "jimenaviva",
+  "origin": "https://jimenaviva.com.ar",
+  "listings": [
+   "/page/{p}/?s=kaury&post_type=product"
+  ],
+  "canal": "may"
+ },
+ "labombachita.com.ar": {
+  "name": "labombachita",
+  "origin": "https://www.labombachita.com.ar",
+  "listings": [
+   "/page/{p}/?s=kaury&post_type=product"
+  ],
+  "canal": "may"
+ },
+ "tienda.bibianalenceria.com": {
+  "name": "tienda",
+  "origin": "https://tienda.bibianalenceria.com",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "lenceriamarina.com.ar": {
+  "name": "lenceriamarina",
+  "origin": "https://www.lenceriamarina.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "lenceriascharo.com": {
+  "name": "lenceriascharo",
+  "origin": "https://lenceriascharo.com",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "lencerialoris.com.ar": {
+  "name": "lencerialoris",
+  "origin": "https://lencerialoris.com.ar",
+  "listings": [
+   "/productos?search=kaury"
+  ],
+  "canal": "may"
+ },
+ "lenceriamayorista.com.ar": {
+  "name": "lenceriamayorista",
+  "origin": "https://www.lenceriamayorista.com.ar",
+  "listings": [
+   "/Products?manufacturerSelected=1753"
+  ],
+  "canal": "may"
+ },
+ "lenceriamiluna.com": {
+  "name": "lenceriamiluna",
+  "origin": "https://www.lenceriamiluna.com",
+  "listings": [
+   "/productos/buscador?expresion=kaury"
+  ],
+  "canal": "may"
+ },
+ "lenceriamonique.com": {
+  "name": "lenceriamonique",
+  "origin": "https://www.lenceriamonique.com",
+  "listings": [
+   "/project/kaury"
+  ],
+  "canal": "may"
+ },
+ "lenceriasol.com.ar": {
+  "name": "lenceriasol",
+  "origin": "https://lenceriasol.com.ar",
+  "listings": [
+   "/search?q=kaury"
+  ],
+  "canal": "may"
+ },
+ "lenceriainlove.com.ar": {
+  "name": "lenceriainlove",
+  "origin": "https://lenceriainlove.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "marzin.com.ar": {
+  "name": "marzin",
+  "origin": "https://marzin.com.ar",
+  "listings": [
+   "/Productos/search?buscar=kaury"
+  ],
+  "canal": "may"
+ },
+ "melomerezcosanluis.mitiendanube.com": {
+  "name": "melomerezcosanluis",
+  "origin": "https://melomerezcosanluis.mitiendanube.com",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "michilenceria.com.ar": {
+  "name": "michilenceria",
+  "origin": "https://www.michilenceria.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "lenceriamytio.com.ar": {
+  "name": "lenceriamytio",
+  "origin": "https://lenceriamytio.com.ar",
+  "listings": [
+   "/tienda/brand/36--kaury"
+  ],
+  "canal": "may"
+ },
+ "nadaqueponerme.com.ar": {
+  "name": "nadaqueponerme",
+  "origin": "https://www.nadaqueponerme.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "nadinlenceria.com": {
+  "name": "nadinlenceria",
+  "origin": "https://www.nadinlenceria.com",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "elparaisodepaso.com.ar": {
+  "name": "elparaisodepaso",
+  "origin": "https://elparaisodepaso.com.ar",
+  "listings": [
+   "/productos.php?busca=kaury"
+  ],
+  "canal": "may"
+ },
+ "paulinamayorista.com.ar": {
+  "name": "paulinamayorista",
+  "origin": "https://www.paulinamayorista.com.ar",
+  "listings": [
+   "/catalogos.php?idmarca=24&marca=KAURY&idcategoria=0&idtemporada=0"
+  ],
+  "canal": "may"
+ },
+ "casadieguito.com.ar": {
+  "name": "casadieguito",
+  "origin": "https://casadieguito.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "lenceriaraffi.com.ar": {
+  "name": "lenceriaraffi",
+  "origin": "https://www.lenceriaraffi.com.ar",
+  "listings": [
+   "/principal.php?seccion=202&categoria_id=1&marca_id=17"
+  ],
+  "canal": "may"
+ },
+ "lenceriaromini.com.ar": {
+  "name": "lenceriaromini",
+  "origin": "https://lenceriaromini.com.ar",
+  "listings": [
+   "/tienda/brand/5--kaury"
+  ],
+  "canal": "may"
+ },
+ "soprana.com.ar": {
+  "name": "soprana",
+  "origin": "https://www.soprana.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "francis.com.ar": {
+  "name": "francis",
+  "origin": "https://francis.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "canal": "may"
+ },
+ "textilviegas.com.ar": {
+  "name": "textilviegas",
+  "origin": "https://textilviegas.com.ar",
+  "listings": [
+   "/page/{p}/?s=kaury&post_type=product"
+  ],
+  "canal": "may"
+ },
+ "lenceriavaleria.com.ar": {
+  "name": "lenceriavaleria",
+  "origin": "https://lenceriavaleria.com.ar",
+  "listings": [
+   "/page/{p}/?s=kaury&post_type=product"
+  ],
+  "canal": "may"
  }
 }

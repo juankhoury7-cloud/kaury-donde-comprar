@@ -31,6 +31,9 @@ await pool(Object.entries(shops), 13, async ([key, shop]) => {
   const t0 = Date.now(), sk = key.replace(/^www\./, '');
   const pProds = (prev.prods || {})[key] || {}, pStock = (prev.stock || {})[sk] || {}, pVars = (prev.vars || {})[sk] || {};
   const status = { ok: true };
+  const may = shop.canal === 'may';
+  // mayoristas: su stock se revisa una vez por hora (junto con los listados); en las otras pasadas se mantiene
+  if (may && !relist) { out.prods[key] = pProds; out.stock[sk] = pStock; out.vars[sk] = pVars; out.status[key] = { ...((prev.status || {})[key] || { ok: true }), may: true }; return; }
   let prods = pProds;
   if (relist) {
     const L = await listProducts(shop, CAT);
@@ -57,13 +60,13 @@ await pool(Object.entries(shops), 13, async ([key, shop]) => {
   out.status[key] = status;
 });
 
-const keys = Object.keys(out.status), okN = keys.filter(k => out.status[k].ok).length;
-for (const k of keys) { const s = out.status[k]; console.log((s.ok ? 'OK ' : 'ERR') + ' ' + k.padEnd(40) + ` ${s.conStock}/${s.arts} con stock · ${s.errores} errores · ${s.seg}s` + (s.err ? ' · ' + s.err : '') + (s.warn ? ' · ' + s.warn : '')); }
-console.log(`${okN}/${keys.length} tiendas OK` + (Object.keys(lastErr).length ? ' · errores de páginas por código: ' + JSON.stringify(lastErr) : ''));
+const keys = Object.keys(out.status), base = keys.filter(k => shops[k].canal !== 'may'), okN = base.filter(k => out.status[k].ok).length;
+for (const k of keys) { const s = out.status[k]; if (s.may && !relist) continue; console.log((s.ok ? 'OK ' : 'ERR') + ' ' + k.padEnd(40) + ` ${s.conStock}/${s.arts} con stock · ${s.errores} errores · ${s.seg}s` + (s.err ? ' · ' + s.err : '') + (s.warn ? ' · ' + s.warn : '')); }
+console.log(`${okN}/${base.length} tiendas minoristas OK · ${keys.filter(k => shops[k].canal === 'may' && out.status[k].ok).length}/${keys.length - base.length} mayoristas OK` + (Object.keys(lastErr).length ? ' · errores de páginas por código: ' + JSON.stringify(lastErr) : ''));
 
 const body = JSON.stringify(out);
 if (process.env.OUT) await writeFile(process.env.OUT, body);
-if (okN < Math.ceil(keys.length / 2)) { console.log('Menos de la mitad de las tiendas respondió: no subo nada para no borrar datos buenos.'); process.exit(1); }
+if (okN < Math.ceil(base.length / 2)) { console.log('Menos de la mitad de las tiendas respondió: no subo nada para no borrar datos buenos.'); process.exit(1); }
 if (SITE && TOKEN) {
   const r = await fetch(SITE + '/api/ingest', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN }, body, signal: AbortSignal.timeout(30000) });
   console.log('Subida:', r.status, await r.text());
