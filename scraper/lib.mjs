@@ -81,7 +81,7 @@ export async function listProducts(shop, CAT) {
   return { prods: Object.fromEntries(pairs), pagesOk, err: pagesOk ? null : (firstErr || 'sin respuesta') };
 }
 
-const SZ = /^(\d{2,3}|\d|xxs|xs|s|m|l|xl|xxl|xxxl|[sml]\s*[-\/]\s*[mlx]+l?|t\.?\s?\d|talle\s*\d+|[uú]nico|u)$/i;
+const SZ = /^(\d{2,3}|\d|xxs|xs|s|m|l|xl|xxl|xxxl|[sml]\s*[-\/]\s*[mlx]+l?|t\.?\s?\d|talle\s*\d+|[uú]nico|un|u)$/i;
 const norm = s => String(s == null ? '' : s).trim().toLowerCase().replace(/\s+/g, ' ');
 const unesc = s => s.replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n)).replace(/&amp;/g, '&');
 
@@ -106,7 +106,10 @@ function woo(d) {
   if (raw === 'false') return 'ajax';
   let v; try { v = JSON.parse(unesc(raw)); } catch { try { v = JSON.parse(raw); } catch { return null; } }
   if (!Array.isArray(v)) return null;
-  return v.map(x => { const vals = Object.values(x.attributes || {}).map(norm); const z = vals.find(a => SZ.test(a)) || ''; const c = vals.find(a => a !== z) || ''; const sx = Object.entries(x.attributes || {}).filter(([, v]) => v).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&'); return [c.replace(/-/g, ' '), z, !!x.is_in_stock && x.is_purchasable !== false, sx]; });
+  return v.map(x => { const at = Object.entries(x.attributes || {}), vals = at.map(([, a]) => norm(a));
+    // primero por el nombre del atributo (talle/size, color); si no, por el formato del valor
+    let z = norm((at.find(([k]) => /talle|size|tama/i.test(k)) || [])[1]), c = norm((at.find(([k]) => /colou?r/i.test(k)) || [])[1]);
+    if (!z) z = vals.find(a => SZ.test(a)) || ''; if (!c) c = vals.find(a => a !== z) || ''; const sx = Object.entries(x.attributes || {}).filter(([, v]) => v).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&'); return [c.replace(/-/g, ' '), z, !!x.is_in_stock && x.is_purchasable !== false, sx]; });
 }
 function empretienda(h) {
   const m = h.match(/var stock = (\[[\s\S]*?\]);\s*\n?\s*var /); if (!m) return null;

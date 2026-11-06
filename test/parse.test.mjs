@@ -13,6 +13,7 @@ const wooVar = [
   { attributes: { attribute_pa_color: 'rosa-viejo', attribute_pa_talle: '2' }, is_in_stock: true, is_purchasable: true },
   { attributes: { attribute_pa_color: 'negro', attribute_pa_talle: '3' }, is_in_stock: false, is_purchasable: true },
   { attributes: { attribute_pa_color: 'amafl', attribute_pa_talle: '3' }, is_in_stock: true, is_purchasable: true },
+  { attributes: { attribute_pa_size: 'un', attribute_pa_color: 'blanco' }, is_in_stock: true, is_purchasable: true },
 ];
 const empStock = [
   { valoratributo: [{ at_nombre: 'Color', valor: { vat_valor: 'Piel' } }, { at_nombre: 'Talle', valor: { vat_valor: 'S/M' } }], s_cantidad: 1, s_ilimitado: 0 },
@@ -44,7 +45,7 @@ assert.deepEqual(s1.ent, { nude: ['90'], negro: ['100'], 'rosa vinta': ['95'] })
 assert.deepEqual(N.vars('4030', s1.vars), { 'Nude|90': 'variant=111', 'Negro|100': 'variant=444' });
 const s2 = await readStock('https://a.test/productos/kaury-articulo-8165/');
 console.log('woo', s2.ent, N('8165', s2.ent), N.vars('8165', s2.vars));
-assert.deepEqual(s2.ent, { 'rosa viejo': ['2'], amafl: ['3'] });
+assert.deepEqual(s2.ent, { 'rosa viejo': ['2'], amafl: ['3'], blanco: ['un'] });
 assert.equal(N.vars('8165', s2.vars)['Rosa vintage|2'], 'attribute_pa_color=rosa-viejo&attribute_pa_talle=2');
 const s3 = await readStock('https://a.test/productos/emp/');
 console.log('empretienda', s3.ent, N('8165', s3.ent), N.vars('8165', s3.vars));
