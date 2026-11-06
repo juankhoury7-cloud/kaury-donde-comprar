@@ -35,5 +35,9 @@ assert.equal(m.length, 1); assert.equal(m[0].tienda, 'alevmayorista.com'); asser
 assert.equal(matches(snap, { a: '8100', c: 'Fresa', z: '100', p: '' }).length, 0);
 assert.equal(matches(snap, { a: '8100', c: '', z: '95', p: '' }).length, 2);
 assert.equal(matches(snap, { a: '8100', c: 'Fresa', z: '95', p: 'CABA' }).length, 0);
+{ const full = JSON.parse(await readFile(join(root, 'data/snapshot.json'), 'utf8'));
+  const n = m => matches(full, { a: '4030', c: '', z: '', p: '', m }).length, a = n('all'), mi = n('min'), ma = n('may');
+  assert.ok(a >= mi && a >= ma && a <= mi + ma, 'aviso "todos" junta por unidad y por mayor');
+  console.log('aviso por unidad y por mayor juntos: 4030 →', mi, '+', ma, '=', a, 'tiendas'); }
 console.log('avisos:', describe({ a: '8100', c: 'Fresa+Negro', z: '95', p: 'Salta' }), '→ OK');
 await rm(tmp, { recursive: true });

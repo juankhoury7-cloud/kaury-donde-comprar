@@ -11,7 +11,7 @@ export async function onRequestPost({ request, env }) {
   if (!allow('al:' + u.id, 20, 60e3)) return tooMany();
   let b; try { b = await request.json(); } catch { return json({ error: 'json inválido' }, 400); }
   const a = String(b.a || ''); if (!ART[a]) return json({ error: 'artículo inexistente' }, 400);
-  const c = list(b.c, 8), z = b.z === 'curva' ? 'curva' : list(b.z, 8), p = PROVS.has(b.p) ? b.p : '', m = b.m === 'may' ? 'may' : 'min';
+  const c = list(b.c, 8), z = b.z === 'curva' ? 'curva' : list(b.z, 8), p = PROVS.has(b.p) ? b.p : '', m = b.m === 'may' ? 'may' : b.m === 'all' ? 'all' : 'min';
   const act = await DB.prepare('SELECT id,a,c,z,p,m FROM alerts WHERE uid=?1 AND active=1').bind(u.id).all();
   const dup = act.results.find(x => x.a === a && x.c === c && x.z === z && x.p === p && (x.m || 'min') === m);
   if (dup) return json({ ok: true, id: dup.id, dup: true });
