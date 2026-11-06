@@ -57,15 +57,17 @@ export async function checkMins(hosts, prev = {}) {
   await pool(Object.entries(hosts), 4, async ([host, h]) => {
     const p = (prev.hosts || {})[host] || {};
     const cur = p.amt !== undefined && p.amt !== null ? p.amt : h.base;   // lo que hoy muestra el mapa
-    const o = { st: 'ok', base: h.base, amt: p.amt ?? null, txt: p.txt || '', temp: !!p.temp, ts: now, chTs: p.chTs || null, seen: '', snip: '' };
+    const o = { st: 'ok', base: h.base, amt: p.amt ?? null, q: !!p.q, txt: p.txt || '', temp: !!p.temp, ts: now, chTs: p.chTs || null, seen: '', snip: '' };
     let r;
     try { r = await readHost(h.origin); } catch (e) { r = { err: String(e.message || e) }; }
     if (r.err) { Object.assign(o, { st: 'error', err: r.err }); res[host] = o; return; }
     o.snip = r.snip.slice(0, 240);
-    const vals = r.none ? [0, ...r.amts] : r.amts;
-    o.seen = vals.length ? vals.map(v => v ? money(v) : 'sin mínimo').join(' / ') : r.qty ? 'mínimo ' + r.qty : '';
+    // si la web muestra varios montos (por ejemplo, primera compra y siguientes) se toma el más bajo
+    const vals = r.none ? [0] : r.amts.length ? [Math.min(...r.amts)] : [];
+    o.seen = r.none ? 'sin mínimo' : r.amts.length ? r.amts.map(money).join(' / ') : r.qty ? 'mínimo ' + r.qty : '';
     const set = (amt, txt, temp, why) => {
       const was = cur;
+      o.q = false;
       if (amt === h.base && !temp) { o.amt = null; o.txt = ''; o.temp = false; } else { o.amt = amt; o.txt = txt; o.temp = temp; }
       if (amt !== was) { o.chTs = now; changes.push({ host, names: h.names, de: was, a: amt, temp, why, ts: now }); }
     };
@@ -74,14 +76,18 @@ export async function checkMins(hosts, prev = {}) {
       if (v === cur && !!r.temp === o.temp) o.st = 'ok';
       else if (!prev.ts) { o.st = 'dudoso'; o.why = 'primera lectura: su web dice ' + (v ? money(v) : 'sin mínimo') + '; si mañana sigue igual se actualiza solo'; }
       else { set(v, v ? money(v) + (r.temp ? ' (promo)' : '') : 'Sin compra mínima' + (r.temp ? ' (promo)' : ''), !!r.temp, 'leído en su web'); o.st = 'cambio'; }
-    } else if (vals.length > 1) {
-      o.st = vals.includes(cur) ? 'ok' : 'dudoso';
-      if (o.st === 'dudoso') o.why = 'su web muestra más de un monto';
+    } else if (r.qty) {
+      // mínimo por cantidad de prendas: se muestra tal cual ("3 prendas")
+      const same = nz(h.baseTxt).replace(/\s+/g, ' ').includes(r.qty) && h.base === null;
+      if (same && !o.q) o.st = 'ok';
+      else if (o.q && o.txt === r.qty) o.st = 'ok';
+      else if (!prev.ts) { o.st = 'dudoso'; o.why = 'primera lectura: su web pide mínimo ' + r.qty + '; si mañana sigue igual se actualiza solo'; }
+      else { if (cur !== null || !same) changes.push({ host, names: h.names, de: cur, a: r.qty, why: 'leído en su web', ts: now }); Object.assign(o, { amt: null, q: !same, txt: same ? '' : r.qty, temp: false, chTs: now, st: 'cambio' }); }
     } else {
       // no publica el mínimo: si teníamos una promo temporal, se vuelve al de siempre; si no, queda para revisar
       if (o.temp) { set(h.base, '', false, 'terminó la promo'); o.st = 'cambio'; }
-      else if (cur === 0 && !r.qty) o.st = 'ok';   // ya figuraba sin mínimo y su web no menciona ninguno
-      else { o.st = r.qty ? 'dudoso' : 'no'; o.why = r.qty ? 'el mínimo es por cantidad (' + r.qty + ')' : 'no encontré la compra mínima en su web'; }
+      else if (cur === 0) o.st = 'ok';   // ya figuraba sin mínimo y su web no menciona ninguno
+      else { o.st = 'no'; o.why = 'no encontré la compra mínima en su web'; }
     }
     res[host] = o;
   });

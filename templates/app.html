@@ -748,7 +748,7 @@ function shopUrl(ch){
 function shopBtn(sh,first){var host=esc(sh.u.replace(/^https?:\/\/(www\.)?/,"").split(/[\/?#]/)[0]),may=sh.m==="may";
   var both=sh.m==="both",t=sh.deep?(may?"Comprar el "+esc(st.code)+" por mayor":"Comprar el "+esc(st.code)+(sh.v?" "+esc(varLabel(sh.v)):"")+(both?"":" por unidad")):(may?"Ver Kaury en su tienda mayorista":"Ver Kaury en su tienda online");
   return '<a class="btn red" data-act="web" data-m="'+sh.m+'" href="'+esc(sh.u)+'" target="_blank" rel="noopener" style="flex-direction:column;gap:2px"><span>'+t+' →</span><small style="font-weight:500;opacity:.85;font-size:11.5px">'+host+(may?" · "+esc(minLabelShort(sh.s)):both?" · por unidad o por mayor"+(sh.s.minAmt?", mínimo por mayor "+esc(sh.s.minTxt||money(sh.s.minAmt)):""):"")+'</small></a>';}
-function minLabelShort(s){return s.minAmt===0?"sin compra mínima":s.minAmt?"mínimo "+(s.minTxt||money(s.minAmt)):"consultá el mínimo";}
+function minLabelShort(s){return s.minAmt===0?"sin compra mínima":s.minAmt?"mínimo "+(s.minTxt||money(s.minAmt)):s.minTxt&&s.minTxt!=="Consultá condiciones"?"mínimo "+s.minTxt:"consultá el mínimo";}
 function varLabel(v){return v.c+(v.z&&v.z!=="Único"?" · talle "+v.z:"");}
 function select(id){
   st.sel=id;var s=STORES[+id.slice(1)],a=st.code?ART[st.code]:null,stock=a?stockFor(a.code)[s.id]:null,shops=s.chs.map(shopUrl).filter(Boolean);
@@ -886,13 +886,13 @@ function loadReal(){
 }
 /* Chequeo diario de compra mínima de cada web mayorista (panel). */
 function loadMins(){fetch(API+"/admin/mins",{headers:{"Authorization":"Bearer "+encodeURIComponent(PASS)},cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(d){if(d)drawMins(d);}).catch(function(){});}
-function drawMins(d){var c=$("minCard");c.hidden=false;var m=function(v){return v===null||v===undefined?"sin dato":v===0?"sin mínimo":"$"+v.toLocaleString("es-AR");};
+function drawMins(d){var c=$("minCard");c.hidden=false;var m=function(v){return typeof v==="string"?v:v===null||v===undefined?"sin dato":v===0?"sin mínimo":"$"+v.toLocaleString("es-AR");};
   if(!d.ts){$("mnSum").textContent="Todavía no corrió el primer chequeo. Se hace una vez por día.";$("mnList").innerHTML="";return;}
   var cnt={};d.hosts.forEach(function(h){cnt[h.st]=(cnt[h.st]||0)+1;});
   $("mnSum").textContent="Último chequeo: "+fmtAt(d.ts)+" · "+d.hosts.length+" webs · "+(cnt.ok||0)+" iguales"+(cnt.cambio?" · "+cnt.cambio+" actualizadas":"")+(cnt.dudoso?" · "+cnt.dudoso+" para revisar":"")+(cnt.no?" · "+cnt.no+" no publican el mínimo":"")+(cnt.error?" · "+cnt.error+" no respondieron":"");
   var ord={cambio:0,dudoso:1,no:2,error:3,ok:4},L={cambio:"Actualizada",dudoso:"Revisar",no:"No lo publica",error:"No respondió",ok:"Igual"};
   var rows=d.hosts.filter(function(h){return h.st!=="ok";}).sort(function(a,b){return ord[a.st]-ord[b.st];});
-  var html=rows.map(function(h){var mapa=h.amt!==null&&h.amt!==undefined?h.amt:h.base;return '<div class="mn"><span class="st '+h.st+'">'+L[h.st]+'</span><b>'+esc((h.names||[]).join(", ")||h.host)+'</b> · '+esc(h.host)+
+  var html=rows.map(function(h){var mapa=h.q?h.txt:h.amt!==null&&h.amt!==undefined?h.amt:h.base;return '<div class="mn"><span class="st '+h.st+'">'+L[h.st]+'</span><b>'+esc((h.names||[]).join(", ")||h.host)+'</b> · '+esc(h.host)+
     '<small>Mapa: '+esc(m(mapa))+(h.temp?" (promo)":"")+(h.seen?' · Su web: '+esc(h.seen):'')+(h.why?' · '+esc(h.why):'')+(h.err?' · error '+esc(h.err):'')+'</small>'+(h.snip?'<small>“…'+esc(h.snip)+'…”</small>':'')+'</div>';}).join("");
   var mv=Object.keys(d.moves||{});if(mv.length)html+='<div class="mnh">Cambios fuertes de precio de ayer a hoy</div>'+mv.map(function(k){var x=d.moves[k];return '<div class="mn"><b>'+esc(k)+'</b> · precios '+(x.pct>0?"+":"")+x.pct+'% (mediana de '+x.n+' artículos Kaury)</div>';}).join("");
   var lg=(d.log||[]).slice(0,12);if(lg.length)html+='<div class="mnh">Historial</div>'+lg.map(function(x){return '<div class="mn"><small style="margin:0">'+fmtAt(x.ts)+'</small>'+esc((x.names||[]).join(", ")||x.host)+': '+(x.precio!==undefined?'precios '+(x.precio>0?"+":"")+x.precio+'%':esc(m(x.de))+' → '+esc(m(x.a))+(x.temp?' (promo)':'')+(x.why?' · '+esc(x.why):''))+'</div>';}).join("");

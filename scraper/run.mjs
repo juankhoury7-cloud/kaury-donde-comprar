@@ -94,7 +94,7 @@ if (daily) {
 }
 // lo que el mapa necesita: la compra mínima vigente de cada web mayorista cuando cambió respecto de la lista
 out.mo = {};
-for (const [h, o] of Object.entries(mstate.hosts || {})) if (o.amt !== null && o.amt !== undefined) out.mo[h] = { a: o.amt, t: o.txt, p: o.temp ? 1 : 0 };
+for (const [h, o] of Object.entries(mstate.hosts || {})) if ((o.amt !== null && o.amt !== undefined) || o.q) out.mo[h] = { a: o.q ? null : o.amt, t: o.txt, p: o.temp ? 1 : 0 };
 
 const body = JSON.stringify(out);
 if (process.env.OUT) await writeFile(process.env.OUT, body);
