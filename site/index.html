@@ -472,8 +472,8 @@ function stockFor(code){
 var NOCOL={"Único":1,"Surtido":1};
 function colLabel(n){if(!NOCOL[n])return n;var a=ART[st.code];return a&&a.colors.every(function(c){return /^pack/i.test(c.n);})?"Pack (la tienda no dice cuál)":"Color sin especificar";}
 var HEX={};CAT.forEach(function(a){a.colors.forEach(function(c){if(!HEX[c.n])HEX[c.n]=c.h;});});
-function colorsFor(a){var seen={},out=[];a.colors.forEach(function(c){seen[c.n]=1;out.push(c);});var sk=stockFor(a.code);
-  Object.keys(sk).forEach(function(id){var e=sk[id];if(e&&e!=="?")Object.keys(e).forEach(function(n){if(!seen[n]&&!NOCOL[n]){seen[n]=1;out.push({n:n,h:HEX[n]||"#cfcfcf"});}});});return out;}
+/* Colores: solo los oficiales de kaury.com (lo que cada tienda tenga de más se ve en su ficha, no como filtro). */
+function colorsFor(a){return a.colors.slice();}
 /* Talles: solo los oficiales de kaury.com (las tiendas que numeran distinto se traducen al leer el stock). */
 function sizesAll(a){if(SIZES[a.code])return a.sizes.slice();var seen={},out=a.sizes.slice();out.forEach(function(z){seen[z]=1;});var sk=stockFor(a.code);
   Object.keys(sk).forEach(function(id){var e=sk[id];if(e&&e!=="?")Object.keys(e).forEach(function(n){e[n].forEach(function(z){if(!seen[z]&&/^([0-9]{1,3}|[A-Z]{1,4}(-[A-Z]{1,4})?|Único)$/.test(z)){seen[z]=1;out.push(z);}});});});return out;}
