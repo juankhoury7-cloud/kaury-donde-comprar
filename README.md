@@ -26,7 +26,7 @@ Cloudflare Pages (proyecto conectado a este repo):
 
 GitHub (Settings → Secrets and variables → Actions):
 - Secret `INGEST_TOKEN` (la misma que en Cloudflare)
-- Variable `SITE_URL` (p. ej. `https://kaury-donde-comprar.pages.dev`)
+- Variable `SITE_URL` (opcional; por defecto `https://kaury-donde-comprar.pages.dev`)
 
 ## Cambiar tiendas o catálogo
 

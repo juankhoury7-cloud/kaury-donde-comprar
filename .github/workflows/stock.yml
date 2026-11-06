@@ -31,7 +31,7 @@ jobs:
       - run: npm ci --omit=dev --no-audit --no-fund
       - name: Leer stock de las tiendas y subirlo
         env:
-          SITE_URL: ${{ vars.SITE_URL }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://kaury-donde-comprar.pages.dev' }}
           INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
           FULL: ${{ inputs.full && '1' || '' }}
         run: node scraper/run.mjs
