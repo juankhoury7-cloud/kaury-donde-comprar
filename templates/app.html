@@ -14,6 +14,8 @@ __ROBOTS__
 <link rel="icon" href="/icon.png">
 <style>
 /* Estilo kaury.com: blanco, negro, gris neutro y el rojo Kaury. Todo pasa sobre el mapa: buscador flotante arriba, colores en una fila deslizable, ficha del local abajo. */
+html,body{max-width:100%;overflow-x:hidden}
+.bar>*{min-width:0}
 :root{
   --bg:#faf9f7; --white:#ffffff; --ink:#0a0a0a; --ink2:#262626; --muted:#737373; --soft:#a3a3a3;
   --line:#e5e5e5; --line2:#d4d4d4; --red:#db0032; --red-d:#b3002a; --red-soft:#fde8ed;
@@ -244,6 +246,9 @@ a{color:inherit}
   .tabs button{padding:6px 8px;margin-left:2px}
   .tabs button .lbl{display:none}
   .beta{display:none}
+  .upd{font-size:11px;gap:5px}.upd .ut{display:none}
+  .acct{margin-left:8px;padding:6px 9px}.acct.in{padding:3px 8px 3px 3px}.acct .lb{display:none}
+  .bar{padding:0 12px;gap:8px}
   .sheet{left:0;right:0;bottom:0;width:auto;max-width:none;border-radius:22px 22px 0 0;border-bottom:0;padding:14px 16px calc(16px + var(--safe-b));max-height:72%}
   .grab{display:block}
   .zoom{top:auto;bottom:calc(76px + var(--safe-b));transform:none}
@@ -777,7 +782,7 @@ function loadReal(){
 var lastStockTs=STOCK_TS,stockApplied=false;
 function ago(ts){var m=Math.max(0,Math.round((Date.now()-ts)/60000));return m<1?"recién":m<60?"hace "+m+" min":m<1440?"hace "+Math.round(m/60)+" h":"hace "+Math.round(m/1440)+" días";}
 function fmtAt(ts){var d=new Date(ts);return d.toLocaleDateString("es-AR",{day:"numeric",month:"numeric",year:"numeric"})+" "+d.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"});}
-function updLabel(){var el=$("upd");if(!lastStockTs){el.hidden=true;return;}el.hidden=false;var old=Date.now()-lastStockTs>3*3600e3;el.className="upd"+(old?" old":"");el.innerHTML='<i></i>Stock '+ago(lastStockTs);el.title="Stock leído de cada tienda el "+fmtAt(lastStockTs);}
+function updLabel(){var el=$("upd");if(!lastStockTs){el.hidden=true;return;}el.hidden=false;var old=Date.now()-lastStockTs>3*3600e3;el.className="upd"+(old?" old":"");el.innerHTML='<i></i><span class="ut">Stock </span>'+ago(lastStockTs);el.title="Stock leído de cada tienda el "+fmtAt(lastStockTs);}
 function applyStock(d){if(!d||!d.prods||!d.stock||!d.ts)return;if(d.ts===lastStockTs){updLabel();return;}lastStockTs=d.ts;
   PRODS=d.prods;STOCK=d.stock;VARS=d.vars||{};STOCKAT=fmtAt(d.ts);stockCache={};
   STORES.forEach(function(s){var r=RAW[s.i],pm=PRODS[r[10]]||{},sk=STOCK[r[10].replace(/^www\./,"")]||{};s.prod=pm;s.stk=sk;s.vars=VARS[r[10].replace(/^www\./,"")]||{};s.vset=new Set(Object.keys(sk).filter(function(c){return pm[c];}));});
@@ -876,8 +881,8 @@ function api(path,opt){opt=opt||{};opt.credentials="same-origin";if(opt.body){op
   return fetch(API+path,opt).then(function(r){return r.json().catch(function(){return {};}).then(function(d){d._status=r.status;return d;});});}
 function loadMe(){return api("/me",{cache:"no-store"}).then(function(d){me=d.user||null;myAlerts=d.alerts||[];paintAcct();return me;}).catch(function(){});}
 function paintAcct(){var b=$("acctBtn");if(!ACCOUNTS){b.hidden=true;return;}b.hidden=false;
-  if(me){b.className="acct in";b.innerHTML='<span class="av">'+esc((me.name||me.email||"?").charAt(0).toUpperCase())+'</span>'+(function(n){return n===1?'1 aviso':n+' avisos';})(myAlerts.filter(function(x){return x.active;}).length);}
-  else{b.className="acct";b.textContent="Avisos";}}
+  if(me){b.className="acct in";b.innerHTML='<span class="av">'+esc((me.name||me.email||"?").charAt(0).toUpperCase())+'</span>'+(function(n){return n===1?'1 aviso':n+' avisos';})(myAlerts.filter(function(x){return x.active;}).length).replace(/ avisos?$/,'<span class="lb">$&</span>');}
+  else{b.className="acct";b.innerHTML='🔔<span class="lb"> Avisos</span>';}}
 function gis(){if(window.google&&google.accounts&&google.accounts.id)return Promise.resolve();if(gisLoading)return gisLoading;
   gisLoading=new Promise(function(ok,ko){var s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;s.onload=function(){ok();};s.onerror=function(){gisLoading=null;ko();};document.head.appendChild(s);})
    .then(function(){google.accounts.id.initialize({client_id:GCID,callback:onGoogle,ux_mode:"popup",auto_select:false,cancel_on_tap_outside:true,itp_support:true});});
