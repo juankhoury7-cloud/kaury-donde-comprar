@@ -36,7 +36,9 @@ jobs:
           FULL: ${{ inputs.full && '1' || '' }}
         run: node scraper/run.mjs
       - name: Mantener activo el horario
-        if: github.event_name == 'schedule' && github.run_number % 2000 == 0
+        if: github.event_name == 'schedule'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/stock.yml/enable"
+          RUN: ${{ github.run_number }}
+        run: |
+          if [ $((RUN % 2000)) -eq 0 ]; then gh api -X PUT "repos/${{ github.repository }}/actions/workflows/stock.yml/enable"; fi
