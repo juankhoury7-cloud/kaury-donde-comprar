@@ -882,7 +882,7 @@ function api(path,opt){opt=opt||{};opt.credentials="same-origin";if(opt.body){op
 function loadMe(){return api("/me",{cache:"no-store"}).then(function(d){me=d.user||null;myAlerts=d.alerts||[];paintAcct();return me;}).catch(function(){});}
 function paintAcct(){var b=$("acctBtn");if(!ACCOUNTS){b.hidden=true;return;}b.hidden=false;
   if(me){b.className="acct in";b.innerHTML='<span class="av">'+esc((me.name||me.email||"?").charAt(0).toUpperCase())+'</span>'+(function(n){return n===1?'1 aviso':n+' avisos';})(myAlerts.filter(function(x){return x.active;}).length).replace(/ avisos?$/,'<span class="lb">$&</span>');}
-  else{b.className="acct";b.textContent="Entrar";b.title="Entrá con Google para recibir avisos de stock";}}
+  else{b.className="acct";b.textContent="Registrate";b.title="Registrate gratis con Google para recibir avisos de stock";}}
 function gis(){if(window.google&&google.accounts&&google.accounts.id)return Promise.resolve();if(gisLoading)return gisLoading;
   gisLoading=new Promise(function(ok,ko){var s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;s.onload=function(){ok();};s.onerror=function(){gisLoading=null;ko();};document.head.appendChild(s);})
    .then(function(){google.accounts.id.initialize({client_id:GCID,callback:onGoogle,ux_mode:"popup",auto_select:false,cancel_on_tap_outside:true,itp_support:true});});
@@ -898,11 +898,10 @@ $("acctDlg").addEventListener("click",function(e){if(e.target===this)closeDlg();
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("acctDlg").hidden)closeDlg();});
 var PRIV='<p class="fine">Usamos tu mail solo para estos avisos'+' y, si lo marcás, para novedades de Kaury. Podés borrar tus avisos cuando quieras. <a href="/privacidad" target="_blank" rel="noopener">Privacidad</a></p>';
 function showLogin(why){
-  openDlg('<h3>'+(why?'Te avisamos cuando haya':'Avisos de stock')+'</h3>'+(why?'<div class="what">🔔 '+alertDesc(why)+'</div>':'')+
-   '<p>Entrá con tu cuenta de Google, sin contraseñas ni formularios. Con tu cuenta:</p>'+
+  openDlg('<h3>'+(why?'Te avisamos cuando haya':'Registrate gratis')+'</h3>'+(why?'<div class="what">🔔 '+alertDesc(why)+'</div><p>Registrate gratis con tu cuenta de Google, en un toque y sin contraseñas. Con tu cuenta:</p>':'<p>Creá tu cuenta con Google en un toque, sin contraseñas ni formularios. Con tu cuenta:</p>')+
    '<ul class="ben"><li><b>✓</b><span>Te mandamos un mail apenas una tienda online tenga lo que buscás, en tu color y talle.</span></li><li><b>✓</b><span>El link te lleva directo al artículo para comprarlo.</span></li><li><b>✓</b><span>Si querés, te enterás primero de los lanzamientos de Kaury.</span></li></ul>'+
    '<div class="gb" id="gbtn"></div><p id="gmsg" style="text-align:center;min-height:1.2em"></p>'+PRIV);
-  gis().then(function(){google.accounts.id.renderButton($("gbtn"),{theme:"filled_black",size:"large",shape:"pill",text:"continue_with",locale:"es",width:280});},function(){$("gmsg").textContent="No se pudo cargar Google. Revisá tu conexión.";});}
+  gis().then(function(){google.accounts.id.renderButton($("gbtn"),{theme:"filled_black",size:"large",shape:"pill",text:"signup_with",locale:"es",width:280});},function(){$("gmsg").textContent="No se pudo cargar Google. Revisá tu conexión.";});}
 function showOnboard(){var tipo=null,news=false;
   openDlg('<h3>¡Listo'+(me&&me.name?', '+esc(me.name.split(" ")[0]):'')+'!</h3><p>Una sola pregunta:</p><p style="color:var(--ink);font-weight:700;margin:0">¿Comprás para vos o para revender?</p>'+
    '<div class="two2"><button type="button" data-t="min">Para mí</button><button type="button" data-t="rev">Para revender</button></div>'+
