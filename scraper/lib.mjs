@@ -5,7 +5,8 @@ import { parse } from 'node-html-parser';
 
 export const UA = 'Mozilla/5.0 (compatible; KauryDondeComprar/1.0; +https://github.com/juankhoury7-cloud/kaury-donde-comprar)';
 
-export async function get(url, { timeout = 20000, tries = 2 } = {}) {
+export const lastErr = {};
+export async function get(url, { timeout = 20000, tries = 4 } = {}) {
   for (let i = 0; i < tries; i++) {
     try {
       const r = await fetch(url, {
@@ -14,7 +15,11 @@ export async function get(url, { timeout = 20000, tries = 2 } = {}) {
         signal: AbortSignal.timeout(timeout),
       });
       if (r.status === 404) return { status: 404, html: null };
-      if (!r.ok) { if (i + 1 < tries) { await sleep(1500); continue; } return { status: r.status, html: null }; }
+      if (r.status === 429 || r.status >= 500) { // la tienda pide ir más despacio: esperar y reintentar
+        const ra = +r.headers.get('retry-after');
+        if (i + 1 < tries) { await sleep(Math.min(20000, (ra > 0 ? ra * 1000 : 2500 * (i + 1)) + Math.random() * 800)); continue; }
+      }
+      if (!r.ok) { if (i + 1 < tries && r.status !== 403) { await sleep(1500); continue; } return { status: r.status, html: null }; }
       return { status: r.status, html: await r.text(), url: r.url };
     } catch (e) {
       if (i + 1 < tries) { await sleep(1500); continue; }
@@ -111,7 +116,7 @@ function empretienda(h) {
 /** Lee el stock de la página de un artículo: {color:[talles]} | 0 (sin stock) | '?' (no se ve) | 'E' (error) */
 export async function readStock(url) {
   const r = await get(url);
-  if (!r.html) return r.status === 404 ? 0 : 'E';
+  if (!r.html) { if (r.status === 404) return 0; const k = r.status || r.err || '?'; lastErr[k] = (lastErr[k] || 0) + 1; return 'E'; }
   const h = r.html, d = parse(h);
   let rows = tiendanube(d); if (rows) return pack(rows);
   rows = woo(d); if (rows === 'ajax') return '?'; if (rows) return pack(rows);

@@ -4,7 +4,7 @@
 //   FULL=1        fuerza a revisar de nuevo qué artículos tiene cada tienda (si no, se hace 1 vez por hora)
 //   OUT           archivo donde guardar el resultado (opcional)
 import { readFile, writeFile } from 'node:fs/promises';
-import { listProducts, readStock, makeNormalizer, pool } from './lib.mjs';
+import { listProducts, readStock, makeNormalizer, pool, sleep, lastErr } from './lib.mjs';
 
 const here = p => new URL('../data/' + p, import.meta.url);
 const json = async p => JSON.parse(await readFile(here(p), 'utf8'));
@@ -35,13 +35,15 @@ await pool(Object.entries(shops), 13, async ([key, shop]) => {
   if (relist) {
     const L = await listProducts(shop, CAT);
     const n = Object.keys(L.prods).length, pn = Object.keys(pProds).length;
-    if (L.err) { status.ok = false; status.err = 'listado: ' + L.err; }
+    if (L.err && !Object.keys(pProds).length) { status.ok = false; status.err = 'listado: ' + L.err; }
+    else if (L.err) status.warn = 'no se pudo abrir el listado (' + L.err + '); se mantienen los artículos anteriores';
     else if (pn && n < pn * 0.5) { status.warn = `listado con ${n} artículos (antes ${pn}); se mantiene el anterior`; }
     else prods = L.prods;
   }
   const codes = Object.keys(prods);
   let errs = 0;
-  const res = await pool(codes, 4, async c => {
+  const res = await pool(codes, 2, async c => {
+    await sleep(200 + Math.random() * 300);
     let s = await readStock(prods[c]);
     if (s === 'E') { errs++; return c in pStock ? pStock[c] : (c in pProds ? 0 : '?'); }
     return normalize(c, s);
@@ -57,7 +59,7 @@ await pool(Object.entries(shops), 13, async ([key, shop]) => {
 
 const keys = Object.keys(out.status), okN = keys.filter(k => out.status[k].ok).length;
 for (const k of keys) { const s = out.status[k]; console.log((s.ok ? 'OK ' : 'ERR') + ' ' + k.padEnd(40) + ` ${s.conStock}/${s.arts} con stock · ${s.errores} errores · ${s.seg}s` + (s.err ? ' · ' + s.err : '') + (s.warn ? ' · ' + s.warn : '')); }
-console.log(`${okN}/${keys.length} tiendas OK`);
+console.log(`${okN}/${keys.length} tiendas OK` + (Object.keys(lastErr).length ? ' · errores de páginas por código: ' + JSON.stringify(lastErr) : ''));
 
 const body = JSON.stringify(out);
 if (process.env.OUT) await writeFile(process.env.OUT, body);
