@@ -9,3 +9,6 @@ crons = ["*/5 * * * *"]
 
 [vars]
 REPO = "juankhoury7-cloud/kaury-donde-comprar"
+
+[observability]
+enabled = true
