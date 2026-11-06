@@ -7,7 +7,7 @@ export default {
     const r = await fetch(`https://api.github.com/repos/${env.REPO}/actions/workflows/stock.yml/dispatches`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${env.GH_TOKEN}`, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'kaury-cron' },
-      body: JSON.stringify({ ref: 'main', inputs: { full } }),
+      body: JSON.stringify({ ref: 'main', inputs: { full: String(full) } }),
     });
     if (!r.ok) throw new Error(`GitHub respondió ${r.status}: ${await r.text()}`);
   },
