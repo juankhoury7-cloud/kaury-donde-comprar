@@ -107,6 +107,9 @@ export async function listProducts(shop, CAT) {
   // si la mayoría de los links dicen "kaury", descartar los que no
   else if (pairs.filter(([, v]) => KR.test(v)).length >= pairs.length * 0.5) pairs = pairs.filter(([, v]) => KR.test(v));
   // descartar links cuyo path tiene otro número de artículo
+  // si el link dice explícitamente el artículo ("kaury-art-8194", "art-4030", "kaury-8248"), tiene que ser ese:
+  // evita que "talles 85 al 100" se tome como art. 100
+  if (!shop.codeRe && !shop.pairRe) pairs = pairs.filter(([c, v]) => { const m = new URL(v).pathname.match(/(?:kaury|art)[-_]?(?:art[-_]?)?(\d{3,4})(?!\d)/i); return !m || m[1] === c; });
   if (!shop.codeRe && !shop.pairRe) pairs = pairs.filter(([c, v]) => { const path = new URL(v).pathname; if (path.includes(c)) return true; return !(path.match(/(?<!\d)\d{2,4}(?!\d)/g) || []).some(n => n !== c); });
   return { prods: Object.fromEntries(pairs), pagesOk, err: pagesOk ? null : (firstErr || 'sin respuesta') };
 }

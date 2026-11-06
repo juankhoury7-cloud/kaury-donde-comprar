@@ -120,3 +120,13 @@ console.log('OK');
   assert.deepEqual(r.ent, { blanco: ['85'], negro: ['90'] });
   console.log('cygnus OK');
 }
+{ // "talles 85 al 100" no es el art. 100
+  const { listProducts } = await import('../scraper/lib.mjs');
+  const h = '<a href="/producto/kaury-art-8194-conjunto-talles-85-al-100/">Kaury Art. 8194 Conjunto Talles 85 al 100</a><a href="/producto/kaury-art-100-pack/">Kaury Art. 100 Pack</a>';
+  const orig = globalThis.fetch; globalThis.fetch = async () => new Response(h, { status: 200 });
+  const r = await listProducts({ origin: 'https://m.test', listings: ['/marca/kaury/'] }, new Set(['8194', '100']));
+  globalThis.fetch = orig;
+  assert.equal(r.prods['8194'], 'https://m.test/producto/kaury-art-8194-conjunto-talles-85-al-100/');
+  assert.equal(r.prods['100'], 'https://m.test/producto/kaury-art-100-pack/');
+  console.log('art. 100 bien identificado OK');
+}
