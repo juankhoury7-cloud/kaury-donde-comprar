@@ -1,6 +1,7 @@
 // Arma site/index.html (mapa público) y site/panel/index.html (panel con contraseña)
 // a partir de templates/app.html y los datos de data/. Uso: node scripts/build-site.mjs
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 const r = p => readFile(new URL('../' + p, import.meta.url), 'utf8');
 const J = async p => JSON.parse(await r(p));
 const [tpl, map, stores, cat, sizes, snap, cfg] = await Promise.all([r('templates/app.html'), J('data/map.json'), J('data/stores.json'), J('data/catalog.json'), J('data/sizes.json'), J('data/snapshot.json'), J('data/config.json')]);
@@ -18,6 +19,13 @@ function build(mode) {
   let t = tpl;
   for (const [k, v] of Object.entries(V)) t = t.split(k).join(v);
   const left = t.match(/__[A-Z]{3,}__/g); if (left) throw new Error('Faltan reemplazos: ' + [...new Set(left)].join(', '));
+  // Política de contenido: solo corre el script propio de esta página (por su huella) y el de "Entrar con Google".
+  const m = t.match(/<script>([\s\S]*?)<\/script>/); if (!m || t.split('<script>').length !== 2) throw new Error('se esperaba un solo <script> en línea');
+  const hash = createHash('sha256').update(m[1], 'utf8').digest('base64');
+  const csp = [`default-src 'self'`, `script-src 'sha256-${hash}' https://accounts.google.com/gsi/client`, `style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style`,
+    `img-src 'self' data: https:`, `connect-src 'self' https://accounts.google.com/gsi/`, `frame-src https://accounts.google.com/gsi/`, `object-src 'none'`, `base-uri 'none'`, `form-action 'self'`].join('; ');
+  t = t.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="${csp}">`);
+  if (!t.includes('Content-Security-Policy')) throw new Error('no pude agregar la política de contenido');
   return t;
 }
 await mkdir(new URL('../site/panel/', import.meta.url), { recursive: true });

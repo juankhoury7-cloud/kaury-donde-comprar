@@ -2,6 +2,9 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
+  Strict-Transport-Security: max-age=31536000
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
 /panel/*
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store
