@@ -96,3 +96,12 @@ console.log('OK');
   assert.deepEqual(N.vars('8227', [['Negro', '2', 'variant=1']]), { 'Negro|90': 'variant=1' });
   console.log('talles oficiales OK');
 }
+{ // color "único"/"surtido": si el artículo oficial tiene un solo color (Pack), se usa ese
+  const { makeNormalizer } = await import('../scraper/lib.mjs');
+  const cat = JSON.parse(await readFile(new URL('../data/catalog.json', import.meta.url), 'utf8'));
+  const sz = JSON.parse(await readFile(new URL('../data/sizes.json', import.meta.url), 'utf8'));
+  const N = makeNormalizer(cat, sz);
+  assert.deepEqual(N('110', { 'surtido': ['u'] }), { Pack: ['Único'] });
+  assert.deepEqual(N('134', { 'unico': ['u'] }), { 'Único': ['Único'] });
+  console.log('packs OK');
+}

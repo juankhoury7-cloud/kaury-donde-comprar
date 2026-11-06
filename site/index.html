@@ -468,9 +468,12 @@ function stockFor(code){
   return stockCache[code]=m;
 }
 /* Colores que aparecen en el stock real de las tiendas para un artículo (incluye los que no figuran en el catálogo). */
+/* "Único"/"Surtido": la tienda no deja elegir color. No es un color de Kaury: no va en la fila de colores. */
+var NOCOL={"Único":1,"Surtido":1};
+function colLabel(n){if(!NOCOL[n])return n;var a=ART[st.code];return a&&a.colors.every(function(c){return /^pack/i.test(c.n);})?"Pack (la tienda no dice cuál)":"Color sin especificar";}
 var HEX={};CAT.forEach(function(a){a.colors.forEach(function(c){if(!HEX[c.n])HEX[c.n]=c.h;});});
 function colorsFor(a){var seen={},out=[];a.colors.forEach(function(c){seen[c.n]=1;out.push(c);});var sk=stockFor(a.code);
-  Object.keys(sk).forEach(function(id){var e=sk[id];if(e&&e!=="?")Object.keys(e).forEach(function(n){if(!seen[n]){seen[n]=1;out.push({n:n,h:HEX[n]||"#cfcfcf"});}});});return out;}
+  Object.keys(sk).forEach(function(id){var e=sk[id];if(e&&e!=="?")Object.keys(e).forEach(function(n){if(!seen[n]&&!NOCOL[n]){seen[n]=1;out.push({n:n,h:HEX[n]||"#cfcfcf"});}});});return out;}
 /* Talles: solo los oficiales de kaury.com (las tiendas que numeran distinto se traducen al leer el stock). */
 function sizesAll(a){if(SIZES[a.code])return a.sizes.slice();var seen={},out=a.sizes.slice();out.forEach(function(z){seen[z]=1;});var sk=stockFor(a.code);
   Object.keys(sk).forEach(function(id){var e=sk[id];if(e&&e!=="?")Object.keys(e).forEach(function(n){e[n].forEach(function(z){if(!seen[z]&&/^([0-9]{1,3}|[A-Z]{1,4}(-[A-Z]{1,4})?|Único)$/.test(z)){seen[z]=1;out.push(z);}});});});return out;}
@@ -766,7 +769,7 @@ function select(id){
    (a?'<div class="stock" style="background:#e9f6ee;color:#1f6b3d;margin-top:12px"><b>✓ El '+esc(a.code)+' está publicado en su tienda online.</b><small style="color:#3d7a55">Revisado el '+esc(STOCKAT)+'. El botón te lleva directo a ese artículo'+(shop&&shop.v?' con <b>'+esc(varLabel(shop.v))+'</b> ya elegido':'')+'.</small></div>':'<div class="stock" style="margin-top:12px">'+s.vset.size+' artículos Kaury publicados en su tienda online. Buscá un artículo arriba para ir directo a él.</div>')+
    (stock==="?"?'<div class="stock">Su tienda no muestra el stock por color y talle: miralo en el link.</div>':stock?'<div class="stock">Colores y talles con stock en su tienda online:<div class="grid">'+Object.keys(stock).sort(function(x,y){var sx=st.colors.indexOf(x)>=0?0:1,sy=st.colors.indexOf(y)>=0?0:1;return sx-sy;}).map(function(n){
        var on=!st.colors.length||st.colors.indexOf(n)>=0;
-       return '<div class="cr'+(on?"":" off")+'"><span class="cn"><span class="dot" style="background:'+(HEX[n]||"#cfcfcf")+'"></span>'+esc(n)+'</span><span class="zs">'+stock[n].map(function(z){var pick=on&&st.sizes.indexOf(z)>=0;return '<span class="z'+(pick?" pk":"")+'">'+esc(z)+'</span>';}).join("")+'</span></div>';}).join("")+'</div><small>Datos reales de su tienda, revisados el '+esc(STOCKAT)+'. El stock puede cambiar durante el día.</small></div>':'')+
+       return '<div class="cr'+(on?"":" off")+'"><span class="cn"><span class="dot" style="background:'+(NOCOL[n]?"repeating-linear-gradient(45deg,#ddd 0 3px,#fff 3px 6px)":(HEX[n]||"#cfcfcf"))+'"></span>'+esc(colLabel(n))+'</span><span class="zs">'+stock[n].map(function(z){var pick=on&&st.sizes.indexOf(z)>=0;return '<span class="z'+(pick?" pk":"")+'">'+esc(z)+'</span>';}).join("")+'</span></div>';}).join("")+'</div><small>Datos reales de su tienda, revisados el '+esc(STOCKAT)+'. El stock puede cambiar durante el día.</small></div>':'')+
    '<div class="acts">'+
    (shops.length?shops.map(shopBtn).join("")
      :'<p style="margin:0;font-size:13px;color:var(--muted)">'+(s.inMin?'Este local no tiene tienda online. Consultá por ':'No vende por mayor online. Consultá stock y condiciones por ')+(s.ig?esc(net):"teléfono")+' o pasá por el local.</p>')+

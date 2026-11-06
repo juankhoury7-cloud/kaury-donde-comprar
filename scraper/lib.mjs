@@ -165,7 +165,8 @@ export function makeNormalizer(catalog, sizes) {
   const pref = (st, k) => { const ks = k.split(' '); return st.length <= ks.length && st.every((b, i) => ks[i].startsWith(b)); };
   function color(code, raw) {
     const s = nz(raw);
-    if (PACK.has(s)) return ['varios', 'surtido', 'colores varios'].includes(s) ? 'Surtido' : 'Único';
+    // la tienda no deja elegir color ("único", "surtido", "-"): si el artículo oficial tiene un solo color (p. ej. "Pack"), es ese
+    if (PACK.has(s)) { const cs = CATC[code] || []; if (cs.length === 1) return cs[0]; return ['varios', 'surtido', 'colores varios'].includes(s) ? 'Surtido' : 'Único'; }
     const cn = {}; (CATC[code] || []).forEach(c => cn[nz(c)] = c);
     if (s in cn) return cn[s];
     const t = SYN[s];
