@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 const enc = s => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 const tnVariants = [
-  { stock: 3, available: true, option0: 'Nude', option1: '90', option2: null, installments_data: '{"Pago Nube":{"2":{"x":1}}}' },
+  { id: 111, stock: 3, available: true, option0: 'Nude', option1: '90', option2: null, installments_data: '{"Pago Nube":{"2":{"x":1}}}' },
   { stock: 0, available: false, option0: 'Nude', option1: '100', option2: null },
   { stock: 0, available: false, option0: 'Negro', option1: '90', option2: null },
-  { stock: 2, available: true, option0: 'Negro', option1: '100', option2: null },
+  { id: 444, stock: 2, available: true, option0: 'Negro', option1: '100', option2: null },
   { stock: null, available: true, option0: 'Rosa Vinta', option1: 'Talle 95', option2: null },
 ];
 const wooVar = [
@@ -38,13 +38,16 @@ const CAT = new Set(catalog.map(r => r[0]));
 const L = await listProducts({ origin: 'https://a.test', listings: ['/search/?q=kaury&page={p}'] }, CAT);
 assert.deepEqual(L.prods, { '4030': 'https://a.test/productos/kaury-articulo-4030/', '8165': 'https://a.test/productos/kaury-articulo-8165/' });
 const N = makeNormalizer(catalog, sizes);
-const s1 = await readStock(pages && 'https://a.test/productos/kaury-articulo-4030/');
-console.log('tiendanube', s1, N('4030', s1));
-assert.deepEqual(s1, { nude: ['90'], negro: ['100'], 'rosa vinta': ['95'] });
+const s1 = await readStock('https://a.test/productos/kaury-articulo-4030/');
+console.log('tiendanube', s1.ent, N('4030', s1.ent), N.vars('4030', s1.vars));
+assert.deepEqual(s1.ent, { nude: ['90'], negro: ['100'], 'rosa vinta': ['95'] });
+assert.deepEqual(N.vars('4030', s1.vars), { 'Nude|90': 'variant=111', 'Negro|100': 'variant=444' });
 const s2 = await readStock('https://a.test/productos/kaury-articulo-8165/');
-console.log('woo', s2, N('8165', s2));
-assert.deepEqual(s2, { 'rosa viejo': ['2'], amafl: ['3'] });
+console.log('woo', s2.ent, N('8165', s2.ent), N.vars('8165', s2.vars));
+assert.deepEqual(s2.ent, { 'rosa viejo': ['2'], amafl: ['3'] });
+assert.equal(N.vars('8165', s2.vars)['Rosa vintage|2'], 'attribute_pa_color=rosa-viejo&attribute_pa_talle=2');
 const s3 = await readStock('https://a.test/productos/emp/');
-console.log('empretienda', s3, N('8165', s3));
-assert.equal(await readStock('https://a.test/nada/'), 0);
+console.log('empretienda', s3.ent, N('8165', s3.ent), N.vars('8165', s3.vars));
+assert.equal(N.vars('8165', s3.vars), null);
+assert.equal((await readStock('https://a.test/nada/')).ent, 0);
 console.log('OK');

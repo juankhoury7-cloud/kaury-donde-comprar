@@ -24,12 +24,12 @@ if (!prev || !prev.prods) prev = await json('snapshot.json');
 
 const now = Date.now();
 const relist = process.env.FULL === '1' || !prev.prodsTs || now - prev.prodsTs > LIST_EVERY;
-const out = { v: 1, ts: now, prodsTs: relist ? now : prev.prodsTs, prods: {}, stock: {}, status: {} };
+const out = { v: 1, ts: now, prodsTs: relist ? now : prev.prodsTs, prods: {}, stock: {}, vars: {}, status: {} };
 console.log(relist ? 'Revisando listados y stock' : 'Revisando stock', '·', new Date(now).toISOString());
 
 await pool(Object.entries(shops), 13, async ([key, shop]) => {
   const t0 = Date.now(), sk = key.replace(/^www\./, '');
-  const pProds = (prev.prods || {})[key] || {}, pStock = (prev.stock || {})[sk] || {};
+  const pProds = (prev.prods || {})[key] || {}, pStock = (prev.stock || {})[sk] || {}, pVars = (prev.vars || {})[sk] || {};
   const status = { ok: true };
   let prods = pProds;
   if (relist) {
@@ -45,13 +45,13 @@ await pool(Object.entries(shops), 13, async ([key, shop]) => {
   const res = await pool(codes, 2, async c => {
     await sleep(200 + Math.random() * 300);
     let s = await readStock(prods[c]);
-    if (s === 'E') { errs++; return c in pStock ? pStock[c] : (c in pProds ? 0 : '?'); }
-    return normalize(c, s);
+    if (s === 'E') { errs++; return { ent: c in pStock ? pStock[c] : (c in pProds ? 0 : '?'), vars: pVars[c] || null }; }
+    return { ent: normalize(c, s.ent), vars: normalize.vars(c, s.vars) };
   });
-  const stock = {};
-  codes.forEach((c, i) => { if (res[i] !== 0) stock[c] = res[i]; });
-  if (codes.length && errs === codes.length) { status.ok = false; status.err = (status.err ? status.err + '; ' : '') + 'no respondió ninguna página de artículo'; out.stock[sk] = pStock; }
-  else out.stock[sk] = stock;
+  const stock = {}, vars = {};
+  codes.forEach((c, i) => { if (res[i].ent !== 0) { stock[c] = res[i].ent; if (res[i].vars) vars[c] = res[i].vars; } });
+  if (codes.length && errs === codes.length) { status.ok = false; status.err = (status.err ? status.err + '; ' : '') + 'no respondió ninguna página de artículo'; out.stock[sk] = pStock; out.vars[sk] = pVars; }
+  else { out.stock[sk] = stock; out.vars[sk] = vars; }
   out.prods[key] = prods;
   Object.assign(status, { arts: codes.length, conStock: Object.keys(out.stock[sk]).length, errores: errs, seg: Math.round((Date.now() - t0) / 1000) });
   out.status[key] = status;

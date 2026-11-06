@@ -85,11 +85,11 @@ const SZ = /^(\d{2,3}|\d|xxs|xs|s|m|l|xl|xxl|xxxl|[sml]\s*[-\/]\s*[mlx]+l?|t\.?\
 const norm = s => String(s == null ? '' : s).trim().toLowerCase().replace(/\s+/g, ' ');
 const unesc = s => s.replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n)).replace(/&amp;/g, '&');
 
-function pack(rows) { // rows: [color, talle, hayStock] -> {color:[talles]} | 0 | '?'
-  if (!rows.length) return '?';
-  const m = {};
-  rows.forEach(([c, z, ok]) => { if (!ok) return; c = c || '-'; z = z || 'u'; (m[c] = m[c] || []).includes(z) || m[c].push(z); });
-  return Object.keys(m).length ? m : 0;
+function pack(rows) { // rows: [color, talle, hayStock, sufijoLink] -> {ent:{color:[talles]}|0|'?', vars:[[color,talle,sufijo]]}
+  if (!rows.length) return { ent: '?', vars: [] };
+  const m = {}, vars = [];
+  rows.forEach(([c, z, ok, sx]) => { if (!ok) return; c = c || '-'; z = z || 'u'; (m[c] = m[c] || []).includes(z) || m[c].push(z); if (sx) vars.push([c, z, sx]); });
+  return { ent: Object.keys(m).length ? m : 0, vars };
 }
 function attr(d, name) { const el = d.querySelector('[' + name + ']'); return el ? el.getAttribute(name) : null; }
 function tiendanube(d) {
@@ -99,30 +99,33 @@ function tiendanube(d) {
   const opts = [0, 1, 2].filter(i => v.some(x => x['option' + i] != null && x['option' + i] !== ''));
   const si = opts.find(i => v.filter(x => SZ.test(norm(x['option' + i]).replace(/^talle\s*/, ''))).length >= v.length * 0.6);
   const ci = opts.find(i => i !== si);
-  return v.map(x => [ci != null ? norm(x['option' + ci]) : '', si != null ? norm(x['option' + si]).replace(/^talle\s*/, '') : '', x.available !== false && (x.stock == null || x.stock > 0)]);
+  return v.map(x => [ci != null ? norm(x['option' + ci]) : '', si != null ? norm(x['option' + si]).replace(/^talle\s*/, '') : '', x.available !== false && (x.stock == null || x.stock > 0), x.id ? 'variant=' + x.id : '']);
 }
 function woo(d) {
   const raw = attr(d, 'data-product_variations'); if (raw == null) return null;
   if (raw === 'false') return 'ajax';
   let v; try { v = JSON.parse(unesc(raw)); } catch { try { v = JSON.parse(raw); } catch { return null; } }
   if (!Array.isArray(v)) return null;
-  return v.map(x => { const vals = Object.values(x.attributes || {}).map(norm); const z = vals.find(a => SZ.test(a)) || ''; const c = vals.find(a => a !== z) || ''; return [c.replace(/-/g, ' '), z, !!x.is_in_stock && x.is_purchasable !== false]; });
+  return v.map(x => { const vals = Object.values(x.attributes || {}).map(norm); const z = vals.find(a => SZ.test(a)) || ''; const c = vals.find(a => a !== z) || ''; const sx = Object.entries(x.attributes || {}).filter(([, v]) => v).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&'); return [c.replace(/-/g, ' '), z, !!x.is_in_stock && x.is_purchasable !== false, sx]; });
 }
 function empretienda(h) {
   const m = h.match(/var stock = (\[[\s\S]*?\]);\s*\n?\s*var /); if (!m) return null;
   let v; try { v = JSON.parse(m[1]); } catch { return null; }
   return v.map(x => { let c = '', z = ''; (x.valoratributo || []).forEach(a => { const val = norm(a.valor && a.valor.vat_valor); if (/talle/i.test(a.at_nombre) || SZ.test(val)) z = val; else c = val; }); return [c, z, x.s_ilimitado == 1 || x.s_cantidad > 0]; });
 }
-/** Lee el stock de la página de un artículo: {color:[talles]} | 0 (sin stock) | '?' (no se ve) | 'E' (error) */
+/** Lee el stock de la página de un artículo.
+ *  Devuelve {ent, vars}: ent = {color:[talles]} | 0 (sin stock) | '?' (no se ve); vars = [[color, talle, sufijo de link]]
+ *  o 'E' si la página no respondió. El sufijo abre el artículo con ese color y talle ya elegidos
+ *  (Tiendanube: variant=ID · WooCommerce: attribute_pa_color=..&attribute_pa_talle=..; Empretienda no lo admite). */
 export async function readStock(url) {
   const r = await get(url);
-  if (!r.html) { if (r.status === 404) return 0; const k = r.status || r.err || '?'; lastErr[k] = (lastErr[k] || 0) + 1; return 'E'; }
+  if (!r.html) { if (r.status === 404) return { ent: 0, vars: [] }; const k = r.status || r.err || '?'; lastErr[k] = (lastErr[k] || 0) + 1; return 'E'; }
   const h = r.html, d = parse(h);
   let rows = tiendanube(d); if (rows) return pack(rows);
-  rows = woo(d); if (rows === 'ajax') return '?'; if (rows) return pack(rows);
-  rows = empretienda(h); if (rows) return pack(rows);
-  if (/agotado|sin stock|out of stock/i.test(d.text || '')) return 0;
-  return '?';
+  rows = woo(d); if (rows === 'ajax') return { ent: '?', vars: [] }; if (rows) return pack(rows);
+  rows = empretienda(h); if (rows) return pack(rows.map(x => x.slice(0, 3)));
+  if (/agotado|sin stock|out of stock/i.test(d.text || '')) return { ent: 0, vars: [] };
+  return { ent: '?', vars: [] };
 }
 
 // ---------- normalización de colores y talles contra el catálogo ----------
@@ -157,8 +160,13 @@ export function makeNormalizer(catalog, sizes) {
     const r = String(raw).trim(); return r.charAt(0).toUpperCase() + r.slice(1).toLowerCase();
   }
   function size(z) { const s = nz(z); if (['u', 'un', 'unico'].includes(s)) return 'Único'; return s.replace(/\//g, '-').toUpperCase(); }
+  /** [[colorCrudo, talleCrudo, sufijo]] -> {"Color|Talle": sufijo} con los nombres del catálogo */
+  function normVars(code, vars) {
+    const o = {}; for (const [c, z, sx] of vars || []) { const k = color(code, c) + '|' + size(z); if (!(k in o)) o[k] = sx; }
+    return Object.keys(o).length ? o : null;
+  }
   /** {colorCrudo:[tallesCrudos]} -> {ColorCatálogo:[Talles ordenados]} */
-  return function normalize(code, ent) {
+  function normalize(code, ent) {
     if (ent === '?' || ent === 0) return ent;
     const out = {};
     for (const [c, zs] of Object.entries(ent)) {
@@ -168,5 +176,7 @@ export function makeNormalizer(catalog, sizes) {
     const order = sizes[code] || [];
     for (const k in out) out[k].sort((a, b) => { const ia = order.indexOf(a), ib = order.indexOf(b); return ((ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib)) || (a.length - b.length) || (a < b ? -1 : a > b ? 1 : 0); });
     return out;
-  };
+  }
+  normalize.vars = normVars;
+  return normalize;
 }

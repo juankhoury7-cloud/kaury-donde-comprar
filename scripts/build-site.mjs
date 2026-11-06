@@ -10,7 +10,7 @@ function build(mode) {
   const V = {
     __NEIGH__: map.neigh, __ARG__: map.arg, __MALV__: map.malv,
     __SCALE__: String(map.scale), __TX__: String(map.translate[0]), __TY__: String(map.translate[1]),
-    __STORES__: js(stores), __CAT__: js(cat), __PRODS__: js(snap.prods), __STOCK__: js(snap.stock), __SIZES__: js(sizes),
+    __STORES__: js(stores), __CAT__: js(cat), __PRODS__: js(snap.prods), __STOCK__: js(snap.stock), __VARS__: js(snap.vars || {}), __SIZES__: js(sizes),
     __STOCKAT__: fmt(snap.ts), __STOCKTS__: String(snap.ts), __CRAWLED__: '5/11/2026', __MODE__: mode,
     __TITLE__: mode === 'panel' ? 'Kaury · Panel de datos' : 'Kaury · Dónde comprar · Venta minorista',
     __ROBOTS__: mode === 'panel' ? '<meta name="robots" content="noindex, nofollow">' : '',

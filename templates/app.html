@@ -343,7 +343,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 <script>
 (function(){
 "use strict";
-var RAW=__STORES__, CAT_RAW=__CAT__, PRODS=__PRODS__, STOCK=__STOCK__, STOCKAT="__STOCKAT__", SIZES=__SIZES__, CRAWLED="__CRAWLED__", MODE="__MODE__", STOCK_TS=__STOCKTS__, API="/api";
+var RAW=__STORES__, CAT_RAW=__CAT__, PRODS=__PRODS__, STOCK=__STOCK__, VARS=__VARS__, STOCKAT="__STOCKAT__", SIZES=__SIZES__, CRAWLED="__CRAWLED__", MODE="__MODE__", STOCK_TS=__STOCKTS__, API="/api";
 var S=__SCALE__, TX=__TX__, TY=__TY__;
 function proj(lat,lng){var l=lng*Math.PI/180,p=lat*Math.PI/180;return [TX+S*l, TY-S*Math.log(Math.tan(Math.PI/4+p/2))];}
 var SMALL={de:1,del:1,la:1,las:1,los:1,y:1,e:1};
@@ -352,7 +352,7 @@ function provName(p){return p==="CAPITAL FEDERAL"?"CABA":tc(p);}
 function nameFix(n){n=String(n).replace(/\s+/g," ").trim();if(n!==n.toUpperCase())return n;return tc(n).replace(/\b(Srl|Mdp|Sl|Gt|Lxm|Jv|Pm|Bl|Pv|Sa)\b/g,function(m){return m.toUpperCase();}).replace(/\bC&t\b/,"C&T");}
 /* Solo tiendas online minoristas (sin compra mínima) revisadas: cada una trae el link exacto de cada artículo Kaury publicado. */
 /* STOCK: colores y talles con stock hoy, leídos de la página de cada artículo en la tienda ("?" = la tienda no los muestra). Artículos sin stock no figuran. */
-var STORES=RAW.map(function(r,i){var pm=PRODS[r[10]]||{},sk=STOCK[r[10].replace(/^www\./,"")]||{};var p=proj(r[8],r[9]);return {i:i,id:"s"+i,name:nameFix(r[0]),type:r[1],addr:r[2],city:tc(r[3]),prov:provName(r[4]),ig:r[5],web:r[11],prod:pm,stk:sk,vset:new Set(Object.keys(sk).filter(function(c){return pm[c];})),x:p[0],y:p[1]};});
+var STORES=RAW.map(function(r,i){var pm=PRODS[r[10]]||{},sk=STOCK[r[10].replace(/^www\./,"")]||{};var p=proj(r[8],r[9]);return {i:i,id:"s"+i,name:nameFix(r[0]),type:r[1],addr:r[2],city:tc(r[3]),prov:provName(r[4]),ig:r[5],web:r[11],prod:pm,stk:sk,vars:VARS[r[10].replace(/^www\./,"")]||{},vset:new Set(Object.keys(sk).filter(function(c){return pm[c];})),x:p[0],y:p[1]};});
 var CAT=CAT_RAW.map(function(r){return {code:r[0],name:r[1],line:r[2],colors:r[3].split("|").map(function(c){var k=c.lastIndexOf(":");return {n:c.slice(0,k)||"Único",h:c.slice(k+1)};})};});
 var ART={};CAT.forEach(function(a){ART[a.code]=a;});
 /* Talles de referencia por tipo de prenda (en la versión real salen del catálogo de cada artículo). */
@@ -617,22 +617,31 @@ function openSheet(html){sheetAt=Date.now();sheet.innerHTML='<div class="grab"><
 function closeSheet(){sheet.hidden=true;$("sum").hidden=false;}
 function mapsUrl(s){return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(s.name+", "+s.addr+", "+s.city+", "+(s.prov==="CABA"?"Ciudad de Buenos Aires":s.prov)+", Argentina");}
 /* Link directo a la página del artículo en la tienda del cliente (relevado en su web). Sin artículo elegido: su sección Kaury. */
+/* Variante a abrir ya elegida: solo si el color y el talle quedan definidos (elegidos o únicos) y la tienda lo admite (Tiendanube, WooCommerce). */
+function pickVar(s,code){var vm=s.vars&&s.vars[code],ent=s.stk[code];if(!vm||!ent||ent==="?"||(!st.colors.length&&!st.sizes.length))return null;
+  var m=[];(st.colors.length?st.colors:Object.keys(ent)).forEach(function(c){if(ent[c])ent[c].forEach(function(z){if((!st.sizes.length||st.sizes.indexOf(z)>=0)&&vm[c+"|"+z])m.push({c:c,z:z,sx:vm[c+"|"+z]});});});
+  if(!m.length)return null;
+  /* con color y talle elegidos va la primera combinación con stock; si eligió solo uno de los dos, solo si queda una única opción */
+  return (st.colors.length&&st.sizes.length)||m.length===1?m[0]:null;}
 function shopUrl(s){
   if(!s.web)return null;
-  if(st.code&&s.prod[st.code])return {u:s.prod[st.code],deep:true};
+  if(st.code&&s.prod[st.code]){var u=s.prod[st.code],v=pickVar(s,st.code);
+    if(v)return {u:u+(u.indexOf("?")>=0?"&":"?")+v.sx,deep:true,v:v};
+    return {u:u,deep:true};}
   return {u:s.web,deep:false};
 }
+function varLabel(v){return v.c+(v.z&&v.z!=="Único"?" · talle "+v.z:"");}
 function select(id){
   st.sel=id;var s=STORES[+id.slice(1)],a=st.code?ART[st.code]:null,stock=a?stockFor(a.code)[s.id]:null,shop=shopUrl(s);
   var net=s.ig?(/tiktok/.test(s.ig)?"TikTok":/facebook/.test(s.ig)?"Facebook":"Instagram"):"";
   openSheet('<h3>'+esc(s.name)+'</h3><div class="ad">'+esc(s.addr)+' · '+esc(s.city)+(s.prov!=="CABA"&&s.prov!==s.city?", "+esc(s.prov):s.prov==="CABA"?", CABA":"")+'</div>'+
    '<div class="tags"><span class="tg red">Tienda online</span><span class="tg">Compra por unidad, sin mínimo</span></div>'+
-   (a?'<div class="stock" style="background:#e9f6ee;color:#1f6b3d;margin-top:12px"><b>✓ El '+esc(a.code)+' está publicado en su tienda online.</b><small style="color:#3d7a55">Revisado el '+esc(STOCKAT)+'. El botón te lleva directo a ese artículo.</small></div>':'<div class="stock" style="margin-top:12px">'+s.vset.size+' artículos Kaury publicados en su tienda online. Buscá un artículo arriba para ir directo a él.</div>')+
+   (a?'<div class="stock" style="background:#e9f6ee;color:#1f6b3d;margin-top:12px"><b>✓ El '+esc(a.code)+' está publicado en su tienda online.</b><small style="color:#3d7a55">Revisado el '+esc(STOCKAT)+'. El botón te lleva directo a ese artículo'+(shop&&shop.v?' con <b>'+esc(varLabel(shop.v))+'</b> ya elegido':'')+'.</small></div>':'<div class="stock" style="margin-top:12px">'+s.vset.size+' artículos Kaury publicados en su tienda online. Buscá un artículo arriba para ir directo a él.</div>')+
    (stock==="?"?'<div class="stock">Su tienda no muestra el stock por color y talle: miralo en el link.</div>':stock?'<div class="stock">Colores y talles con stock en su tienda online:<div class="grid">'+Object.keys(stock).sort(function(x,y){var sx=st.colors.indexOf(x)>=0?0:1,sy=st.colors.indexOf(y)>=0?0:1;return sx-sy;}).map(function(n){
        var on=!st.colors.length||st.colors.indexOf(n)>=0;
        return '<div class="cr'+(on?"":" off")+'"><span class="cn"><span class="dot" style="background:'+(HEX[n]||"#cfcfcf")+'"></span>'+esc(n)+'</span><span class="zs">'+stock[n].map(function(z){var pick=on&&st.sizes.indexOf(z)>=0;return '<span class="z'+(pick?" pk":"")+'">'+esc(z)+'</span>';}).join("")+'</span></div>';}).join("")+'</div><small>Datos reales de su tienda, revisados el '+esc(STOCKAT)+'. El stock puede cambiar durante el día.</small></div>':'')+
    '<div class="acts">'+
-   (shop?'<a class="btn red" data-act="web" href="'+esc(shop.u)+'" target="_blank" rel="noopener" style="flex-direction:column;gap:2px"><span>'+(shop.deep?"Comprar el "+esc(st.code)+" en su tienda online":"Ver Kaury en su tienda online")+' →</span><small style="font-weight:500;opacity:.85;font-size:11.5px">'+esc(shop.u.replace(/^https?:\/\/(www\.)?/,"").split(/[\/?#]/)[0])+'</small></a>'
+   (shop?'<a class="btn red" data-act="web" href="'+esc(shop.u)+'" target="_blank" rel="noopener" style="flex-direction:column;gap:2px"><span>'+(shop.deep?"Comprar el "+esc(st.code)+(shop.v?" "+esc(varLabel(shop.v)):"")+" en su tienda online":"Ver Kaury en su tienda online")+' →</span><small style="font-weight:500;opacity:.85;font-size:11.5px">'+esc(shop.u.replace(/^https?:\/\/(www\.)?/,"").split(/[\/?#]/)[0])+'</small></a>'
 
      :'<p style="margin:0;font-size:13px;color:var(--muted)">Este local no tiene tienda online. Consultá por '+(s.ig?esc(net):"teléfono")+' o pasá por el local.</p>')+
    '<div class="two">'+(s.ig?'<a class="btn'+(shop?"":" red")+'" data-act="ig" href="'+esc(s.ig)+'" target="_blank" rel="noopener">'+net+'</a>':'')+
@@ -736,8 +745,8 @@ function ago(ts){var m=Math.max(0,Math.round((Date.now()-ts)/60000));return m<1?
 function fmtAt(ts){var d=new Date(ts);return d.toLocaleDateString("es-AR",{day:"numeric",month:"numeric",year:"numeric"})+" "+d.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"});}
 function updLabel(){var el=$("upd");if(!lastStockTs){el.hidden=true;return;}el.hidden=false;var old=Date.now()-lastStockTs>3*3600e3;el.className="upd"+(old?" old":"");el.innerHTML='<i></i>Stock '+ago(lastStockTs);el.title="Stock leído de cada tienda el "+fmtAt(lastStockTs);}
 function applyStock(d){if(!d||!d.prods||!d.stock||!d.ts)return;if(d.ts===lastStockTs){updLabel();return;}lastStockTs=d.ts;
-  PRODS=d.prods;STOCK=d.stock;STOCKAT=fmtAt(d.ts);stockCache={};
-  STORES.forEach(function(s){var r=RAW[s.i],pm=PRODS[r[10]]||{},sk=STOCK[r[10].replace(/^www\./,"")]||{};s.prod=pm;s.stk=sk;s.vset=new Set(Object.keys(sk).filter(function(c){return pm[c];}));});
+  PRODS=d.prods;STOCK=d.stock;VARS=d.vars||{};STOCKAT=fmtAt(d.ts);stockCache={};
+  STORES.forEach(function(s){var r=RAW[s.i],pm=PRODS[r[10]]||{},sk=STOCK[r[10].replace(/^www\./,"")]||{};s.prod=pm;s.stk=sk;s.vars=VARS[r[10].replace(/^www\./,"")]||{};s.vset=new Set(Object.keys(sk).filter(function(c){return pm[c];}));});
   [].forEach.call(document.querySelectorAll(".stAt"),function(e){e.textContent=STOCKAT;});
   updLabel();renderTop();var keep=st.sel;render(false);if(keep&&st.sel===keep)select(keep);if(!$("view-datos").hidden)drawData();}
 var pulling=false;
