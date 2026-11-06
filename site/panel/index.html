@@ -700,16 +700,19 @@ function renderTop(){
 /* ---------- eventos anónimos ---------- */
 var SID=(function(){try{var v=sessionStorage.getItem("kaury_sid");if(!v){v=Math.random().toString(36).slice(2,10);sessionStorage.setItem("kaury_sid",v);}return v;}catch(e){return Math.random().toString(36).slice(2,10);}})();
 var myEvents=[],lastKey="";
-function logSearch(){var key=st.code+"|"+st.colors.join("+")+"|"+st.sizes.join("+")+"|"+st.prov;if(key===lastKey)return;lastKey=key;push({t:"s",ts:Date.now(),a:st.code,c:st.colors.join("+"),z:st.sizes.join("+"),p:st.prov||"",r:visible().length});}
+/* Una búsqueda cuenta cuando la persona deja de tocar filtros 3 s (no cada toque de color o talle). */
+var lsT=null;function logSearch(){clearTimeout(lsT);lsT=setTimeout(logSearchNow,3000);}
+function flushSearch(){if(lsT){clearTimeout(lsT);lsT=null;logSearchNow();}}
+function logSearchNow(){lsT=null;var key=st.code+"|"+st.colors.join("+")+"|"+st.sizes.join("+")+"|"+st.prov;if(key===lastKey)return;lastKey=key;push({t:"s",ts:Date.now(),a:st.code,c:st.colors.join("+"),z:st.sizes.join("+"),p:st.prov||"",r:visible().length});}
 function logUnknown(txt){push({t:"s",ts:Date.now(),a:"?"+txt.slice(0,20),c:"",p:st.prov||"",r:0});toast("No encontramos el artículo “"+txt+"”.");}
-function logClick(s,act){push({t:"c",ts:Date.now(),a:st.code||"",c:st.colors.join("+"),z:st.sizes.join("+"),st:s.i,p:s.prov,k:act||""});}
+function logClick(s,act){flushSearch();push({t:"c",ts:Date.now(),a:st.code||"",c:st.colors.join("+"),z:st.sizes.join("+"),st:s.i,p:s.prov,k:act||""});}
 function push(ev){myEvents.push(ev);if(dbReady)queueWrite();if(!$("view-datos").hidden)drawData();}
 var realEvents=[],realLoaded=false,realErr="",isAdmin=null;
 /* Envío de eventos anónimos a la base (solo en la página pública). */
 var sent=0,sendT=null;
-var MAX_EV=150;
-function queueWrite(){if(MODE!=="public"||sent>=MAX_EV)return;clearTimeout(sendT);sendT=setTimeout(flush,8000);}
-function flush(beacon){if(MODE!=="public"||sent>=myEvents.length||sent>=MAX_EV)return;var batch=myEvents.slice(sent,Math.min(sent+50,MAX_EV)),body=JSON.stringify({sid:SID,ev:batch});sent+=batch.length;
+var MAX_EV=40;
+function queueWrite(){if(MODE!=="public"||sent>=MAX_EV)return;clearTimeout(sendT);sendT=setTimeout(flush,20000);}
+function flush(beacon){if(beacon===true)flushSearch();if(MODE!=="public"||sent>=myEvents.length||sent>=MAX_EV)return;var batch=myEvents.slice(sent,Math.min(sent+50,MAX_EV)),body=JSON.stringify({sid:SID,ev:batch});sent+=batch.length;
   try{if(beacon===true&&navigator.sendBeacon){navigator.sendBeacon(API+"/ev",new Blob([body],{type:"application/json"}));}
   else fetch(API+"/ev",{method:"POST",headers:{"Content-Type":"application/json"},body:body,keepalive:true}).catch(function(){});}catch(e){}
   if(sent<myEvents.length&&sent<MAX_EV)queueWrite();}

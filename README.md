@@ -41,9 +41,9 @@ Prueba local: `npm test` · `OUT=out.json node scraper/run.mjs` (no sube nada si
 | Dónde | Límite |
 |---|---|
 | `/api/stock` | Se guarda 30 s en memoria (no lee la base en cada visita) · 30 pedidos/min por IP |
-| `/api/ev` | Solo desde la propia página (Origin) · 30 envíos y 300 eventos/min por IP · 3000/día por IP · tope global `MAX_EV_DAY` (30.000/día por defecto) |
+| `/api/ev` | Solo desde la propia página (Origin) · 6 envíos y 60 eventos/min por IP · 400/día por IP · tope global `MAX_EV_DAY` (5.000/día por defecto) · eventos de más de 13 meses se borran solos |
 | `/api/admin/events` | 8 contraseñas erróneas en 15 min → bloqueo 15 min · 20 pedidos/min · hasta 20.000 eventos por consulta |
 | `/api/ingest` | Clave secreta · 6 pedidos/min |
-| Navegador | Pide stock cada ~5 min solo con la pestaña visible, sin pedidos superpuestos · eventos en lotes cada 8 s · máx. 150 eventos por visita |
+| Navegador | Pide stock cada ~5 min solo con la pestaña visible, sin pedidos superpuestos · una búsqueda cuenta recién cuando se dejan de tocar filtros 3 s · eventos en lotes cada 20 s · máx. 40 eventos por visita |
 
 Si se agotara el cupo gratuito de Functions, Cloudflare sigue sirviendo la página (modo *fail open*): el mapa funciona con el último stock incluido en la página.

@@ -1,6 +1,6 @@
 // POST /api/ev -> búsquedas y clics anónimos del mapa público.
-// Límites: solo desde la propia página · 30 envíos y 300 eventos por minuto por IP ·
-// 3000 eventos por día por IP (varias personas pueden compartir IP) · tope global de MAX_EV_DAY eventos por día (por defecto 30.000).
+// Límites: solo desde la propia página · 6 envíos y 60 eventos por minuto por IP ·
+// 400 eventos por día por IP (varias personas pueden compartir IP) · tope global de MAX_EV_DAY eventos por día (por defecto 5.000).
 import { db, json } from '../../lib/db.js';
 import { allow, ipOf, sameOrigin, tooMany } from '../../lib/guard.js';
 const S = (x, n = 60) => (x == null ? '' : String(x)).slice(0, n);
@@ -9,13 +9,13 @@ const day = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10); 
 export async function onRequestPost({ request, env }) {
   if (!sameOrigin(request)) return json({ error: 'origen no permitido' }, 403);
   const ip = ipOf(request);
-  if (!allow('evr:' + ip, 30, 60e3)) return tooMany();
+  if (!allow('evr:' + ip, 6, 60e3)) return tooMany();
   let d; try { const txt = await request.text(); if (txt.length > 40000) return json({ error: 'grande' }, 413); d = JSON.parse(txt); } catch { return json({ error: 'json inválido' }, 400); }
   const sid = S(d && d.sid, 16), now = Date.now();
-  const rows = (Array.isArray(d && d.ev) ? d.ev.slice(0, 50) : []).filter(e => e && ['s', 'c', 'sh'].includes(e.t));
+  const rows = (Array.isArray(d && d.ev) ? d.ev.slice(0, 40) : []).filter(e => e && ['s', 'c', 'sh'].includes(e.t));
   if (!rows.length) return json({ ok: true, n: 0 });
-  if (!allow('evm:' + ip, 300, 60e3, rows.length) || !allow('evd:' + ip, 3000, 864e5, rows.length)) return tooMany();
-  const DB = await db(env), cap = +env.MAX_EV_DAY || 30000;
+  if (!allow('evm:' + ip, 60, 60e3, rows.length) || !allow('evd:' + ip, 400, 864e5, rows.length)) return tooMany();
+  const DB = await db(env), cap = +env.MAX_EV_DAY || 5000;
   const c = await DB.prepare("INSERT INTO kv (k,v,at) VALUES (?1,?2,?3) ON CONFLICT(k) DO UPDATE SET v=CAST(v AS INTEGER)+?2, at=?3 RETURNING v")
     .bind('evn:' + day(), String(rows.length), now).first();
   if (c && +c.v > cap) return json({ ok: false, error: 'tope diario alcanzado' }, 429);

@@ -11,6 +11,8 @@ export async function onRequestPost({ request, env }) {
   if (v.length > 1.5e6) return json({ error: 'demasiado grande' }, 413);
   const DB = await db(env);
   await DB.prepare("INSERT INTO kv (k,v,at) VALUES ('stock',?1,?2) ON CONFLICT(k) DO UPDATE SET v=excluded.v, at=excluded.at").bind(v, Date.now()).run();
+  // limpieza: los eventos de más de 13 meses y los contadores diarios viejos se borran
+  if (new Date().getUTCMinutes() < 5) await DB.batch([DB.prepare('DELETE FROM ev WHERE ts < ?1').bind(Date.now() - 400 * 864e5), DB.prepare("DELETE FROM kv WHERE k LIKE 'evn:%' AND at < ?1").bind(Date.now() - 7 * 864e5)]);
   invalidate();
   return json({ ok: true, tiendas: Object.keys(d.stock).length, bytes: v.length });
 }
