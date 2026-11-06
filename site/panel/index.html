@@ -466,15 +466,17 @@ function colorsFor(a){var seen={},out=[];a.colors.forEach(function(c){seen[c.n]=
   Object.keys(sk).forEach(function(id){var e=sk[id];if(e&&e!=="?")Object.keys(e).forEach(function(n){if(!seen[n]){seen[n]=1;out.push({n:n,h:HEX[n]||"#cfcfcf"});}});});return out;}
 function sizesAll(a){var seen={},out=a.sizes.slice();out.forEach(function(z){seen[z]=1;});var sk=stockFor(a.code);
   Object.keys(sk).forEach(function(id){var e=sk[id];if(e&&e!=="?")Object.keys(e).forEach(function(n){e[n].forEach(function(z){if(!seen[z]&&/^([0-9]{1,3}|[A-Z]{1,4}(-[A-Z]{1,4})?|Único)$/.test(z)){seen[z]=1;out.push(z);}});});});return out;}
-var st={code:"",colors:[],sizes:[],prov:"",type:"",web:false,conf:false,sel:"",minLo:0,minMax:null,curva:false};
+var st={code:"",colors:[],sizes:[],prov:"",type:"",web:false,conf:false,sel:"",canal:"",minLo:0,minMax:null,curva:false};
 /* Rango de compra mínima. Los locales que venden por unidad cuentan como $0. minMax=null significa "sin tope"; minMax=0, "solo sin mínimo". */
 var MIN_STOPS=[0,10000,20000,30000,40000,50000,60000,70000,80000,90000,100000,120000,150000,200000,250000,300000,400000,500000],MIN_MAX=500000;
 function stopIdx(v){var i=MIN_STOPS.indexOf(v);return i<0?0:i;}
-function minActive(){return st.minLo>0||st.minMax!==null;}
-function minOK(s){if(!minActive())return true;var v=s.minEff;if(v===null||v===undefined)return false;return v>=st.minLo&&(st.minMax===null||v<=st.minMax);}
+/* Cómo compra: "" todos, "min" por unidad / sin mínimo, "may" por mayor (con rango de compra mínima opcional). */
+function minActive(){return st.canal==="may"&&(st.minLo>0||st.minMax!==null);}
+function minOK(s){if(st.canal==="min")return s.inMin||s.minAmt===0;if(st.canal!=="may")return true;if(!s.inMay)return false;if(!minActive())return true;var v=s.minAmt;if(v===null||v===undefined)return false;return v>=st.minLo&&(st.minMax===null||v<=st.minMax);}
 function money(v){return "$"+v.toLocaleString("es-AR");}
 function minRangeTxt(){if(st.minMax===0)return "sin compra mínima";return st.minLo&&st.minMax!==null?"entre "+money(st.minLo)+" y "+money(st.minMax):st.minMax!==null?"hasta "+money(st.minMax):st.minLo?"desde "+money(st.minLo):"";}
-function lgd(vis){var u=vis.filter(function(s){return s.inMin;}).length,m=vis.length-u;return '<span class="lgd"><span><i class="r"></i>'+u+' por unidad</span><span><i class="k"></i>'+m+' por mayor</span></span>';}
+function lgd(vis){if(st.canal)return "";var u=vis.filter(function(s){return s.inMin;}).length,m=vis.filter(function(s){return s.inMay;}).length;return '<span class="lgd"><span>'+u+' venden por unidad</span><span>'+m+' por mayor</span></span>';}
+function canalTxt(){return st.canal==="min"?" que venden por unidad, sin mínimo":st.canal==="may"?" que venden por mayor"+(minActive()?(st.minMax===0?" sin compra mínima":", compra mínima "+minRangeTxt()):""):"";}
 function kindTxt(s){return s.inMin&&s.inMay?"Por unidad y por mayor":s.inMin?"Por unidad":"Por mayor";}
 /* Un local entra si tiene alguno de los colores elegidos en alguno de los talles elegidos (sin elección = cualquiera). */
 function matchEnt(ent,colors,sizes){if(!ent)return false;if(ent==="?")return !colors.length&&!sizes.length;var cs=colors.length?colors:Object.keys(ent);
@@ -565,13 +567,13 @@ $("strip2").addEventListener("click",function(e){
 /* ---------- resumen ---------- */
 function renderSum(vis){
   var a=st.code?ART[st.code]:null,el=$("sum");
-  if(!a){el.className="sum";el.innerHTML='<b>'+vis.length+'</b><span class="s">locales'+(st.prov?" en "+esc(st.prov):" en todo el país")+(minActive()?(st.minMax===0?' sin compra mínima':' con compra mínima '+esc(minRangeTxt())):'')+lgd(vis)+'<button type="button" class="lstb">Ver lista por compra mínima ›</button></span>';}
+  if(!a){el.className="sum";el.innerHTML='<b>'+vis.length+'</b><span class="s">locales'+esc(canalTxt())+(st.prov?" en "+esc(st.prov):" en todo el país")+lgd(vis)+'<button type="button" class="lstb">Ver lista por compra mínima ›</button></span>';}
   else if(!vis.length){var al=alternatives(a);el.className="sum zero";
     el.innerHTML='<span class="s"><b>No hay</b> el '+esc(a.code)+esc(selDesc())+(st.curva?' en curva completa':'')+(st.prov?" en "+esc(st.prov):"")+' en ninguna tienda hoy.'+(al.length?' Pero hay:':' Probá sin filtros.')+'</span>'+
       (al.length?'<div class="alts">'+al.map(function(x,i){return '<button type="button" class="alt" data-i="'+i+'">'+(x.c&&x.c.length===1?'<span class="dot" style="background:'+(HEX[x.c[0]]||"#cfcfcf")+'"></span>':'')+esc(x.label)+' <i>'+x.n+'</i></button>';}).join("")+'</div>':'')+
       (ACCOUNTS?(hasAlert(curAlert())?'<button type="button" class="ntf on">✓ Te avisamos por mail cuando haya</button>':'<button type="button" class="ntf">🔔 Avisame cuando haya</button>'):'');
     el._alts=al;}
-  else{var nw={};vis.forEach(function(s){nw[s.web]=1;});var nt=Object.keys(nw).length;el.className="sum";el.innerHTML='<b>'+vis.length+'</b><span class="s">'+(vis.length===1?"local tiene":"locales tienen")+' el '+esc(a.code)+esc(selDesc())+(st.curva?' en curva completa':'')+(st.prov?" en "+esc(st.prov):"")+' en su tienda online'+(nt!==vis.length?' ('+nt+' tiendas)':'')+lgd(vis)+'<span style="color:var(--red);font-weight:600;display:block;margin-top:3px">Tocá uno y vas directo al artículo</span></span>';}
+  else{var nw={};vis.forEach(function(s){nw[s.web]=1;});var nt=Object.keys(nw).length;el.className="sum";el.innerHTML='<b>'+vis.length+'</b><span class="s">'+(vis.length===1?"local":"locales")+esc(canalTxt())+(vis.length===1?" tiene":" tienen")+' el '+esc(a.code)+esc(selDesc())+(st.curva?' en curva completa':'')+(st.prov?" en "+esc(st.prov):"")+' en su tienda online'+(nt!==vis.length?' ('+nt+' tiendas)':'')+lgd(vis)+'<span style="color:var(--red);font-weight:600;display:block;margin-top:3px">Tocá uno y vas directo al artículo</span></span>';}
   el.hidden=!$("sheet").hidden;
 }
 $("sum").addEventListener("click",function(e){if(e.target.closest(".ntf")){askAlert();return;}if(e.target.closest(".lstb")){showList(curVis,"min");return;}var b=e.target.closest(".alt");
@@ -644,7 +646,7 @@ function drawDots(){
     var inner;
     var nu=c.m.filter(function(s){return s.inMin;}).length,cc=nu===0?" may":nu<n?" mix":"";
     if(n>1){var r=11+Math.min(14,Math.sqrt(n)*2.2);inner='<circle class="core" cx="'+x+'" cy="'+y+'" r="'+r+'"/><text class="lbl" x="'+x+'" y="'+y+'">'+n+'</text>';}
-    else{inner='<ellipse class="shadow" cx="'+x+'" cy="'+(y+1)+'" rx="5" ry="2"/><path class="pin'+cc+'" d="M'+x+','+y+' c-2.2,-4.4 -8,-9.6 -8,-15 a8,8 0 1 1 16,0 c0,5.4 -5.8,10.6 -8,15z"/><circle class="pdot" cx="'+x+'" cy="'+(y-15)+'" r="3"/>';}
+    else{inner='<ellipse class="shadow" cx="'+x+'" cy="'+(y+1)+'" rx="5" ry="2"/><path class="pin" d="M'+x+','+y+' c-2.2,-4.4 -8,-9.6 -8,-15 a8,8 0 1 1 16,0 c0,5.4 -5.8,10.6 -8,15z"/><circle class="pdot" cx="'+x+'" cy="'+(y-15)+'" r="3"/>';}
     html+='<g class="cl'+(sel?" sel":"")+(unk?" unk":"")+(intro?" in":"")+'" data-ids="'+ids+'" tabindex="0" role="button" aria-label="'+(n>1?n+" locales":esc(c.m[0].name)+", "+kindTxt(c.m[0]).toLowerCase())+'" style="transform-origin:'+x+'px '+y+'px;'+(intro?"animation-delay:"+Math.round(Math.max(0,y)/vh*500)+"ms":"")+'"><circle cx="'+x+'" cy="'+(n>1?y:y-12)+'" r="'+(n>1?16+Math.min(14,Math.sqrt(n)*2.2):13)+'" fill="transparent"/>'+inner+'</g>';
   });
   dotsG.innerHTML=html;firstDraw=false;
@@ -768,7 +770,7 @@ function showList(list,how){
   if(how==="min"){var g={},ord=[];list.forEach(function(s){var k=s.name.toLowerCase()+"|"+s.minAmt+"|"+s.minTxt;if(!g[k]){g[k]={s:s,cities:[],n:0};ord.push(k);}g[k].n++;if(g[k].cities.indexOf(s.city)<0)g[k].cities.push(s.city);});
     list=ord.map(function(k){var x=g[k];return Object.assign(Object.create(x.s),{city:x.cities.slice(0,3).join(", ")+(x.cities.length>3?"…":""),prov:x.n>1?x.n+" locales":x.s.prov});});}
   openSheet((how==="min"?'<h3>Locales por compra mínima</h3><div class="ad">Primero los que venden por unidad, después de menor a mayor'+(st.prov?' · '+esc(st.prov):'')+'</div>':'<h3>'+list.length+' locales en la misma zona</h3><div class="ad">'+esc(list[0].city)+(list[0].prov!=="CABA"?", "+esc(list[0].prov):", CABA")+'</div>')+'<div class="lst">'+
-    list.map(function(s){return '<button type="button" class="li" data-id="'+s.id+'"><span><b><i class="kd" style="background:'+(s.inMin?'var(--red)':'var(--ink)')+'"></i>'+esc(s.name)+'</b><span>'+(how==="min"?esc(s.city)+(s.prov&&s.prov!==s.city?' ('+esc(s.prov)+')':''):esc(s.addr))+' · <b style="color:var(--ink)">'+(s.inMin?(s.inMay?'por unidad y por mayor':'por unidad, sin mínimo'):esc(minLabel(s)))+'</b>'+(st.code&&s.prod[st.code]?' · <span style="color:var(--red)">tiene el '+esc(st.code)+'</span>':'')+'</span></span><i>›</i></button>';}).join("")+'</div>');
+    list.map(function(s){return '<button type="button" class="li" data-id="'+s.id+'"><span><b>'+esc(s.name)+'</b><span>'+(how==="min"?esc(s.city)+(s.prov&&s.prov!==s.city?' ('+esc(s.prov)+')':''):esc(s.addr))+' · <b style="color:var(--ink)">'+(s.inMin?(s.inMay?'por unidad y por mayor':'por unidad, sin mínimo'):esc(minLabel(s)))+'</b>'+(st.code&&s.prod[st.code]?' · <span style="color:var(--red)">tiene el '+esc(st.code)+'</span>':'')+'</span></span><i>›</i></button>';}).join("")+'</div>');
   Array.prototype.forEach.call(sheet.querySelectorAll(".li"),function(b){b.addEventListener("click",function(){select(b.getAttribute("data-id"));});});
 }
 function provCount(){var provs={};STORES.forEach(function(s){if(s.on)provs[s.prov]=(provs[s.prov]||0)+1;});return provs;}
@@ -776,11 +778,12 @@ var ZONES=[["AMBA",[-34.42,-58.98,-34.9,-58.15]],["Once y Flores",[-34.6,-58.49,
 $("filtBtn").addEventListener("click",function(){
   sugg.hidden=true;var provs=provCount();
   openSheet('<h3>Filtros y zonas</h3><div class="fl">'+
-   '<div class="mr"><span class="t" style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px">Compra mínima</span>'+
+   '<div><span class="t" style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">Cómo querés comprar</span><div class="mins" id="fCanal">'+[["","Todos"],["min","Por unidad (sin mínimo)"],["may","Por mayor"]].map(function(c){return '<button type="button" data-cn="'+c[0]+'" class="'+(st.canal===c[0]?"on":"")+'">'+c[1]+'</button>';}).join("")+'</div></div>'+
+   '<div class="mr" id="mrBox"'+(st.canal==="may"?'':' hidden')+'><span class="t" style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px">Compra mínima por mayor</span>'+
      '<div class="mrv" id="mrv"></div><div class="dual"><div class="trk"><div class="fill" id="mrFill"></div></div><input type="range" id="mrLo" min="0" max="'+(MIN_STOPS.length-1)+'" step="1" value="'+stopIdx(st.minLo)+'" aria-label="Compra mínima desde"><input type="range" id="mrHi" min="0" max="'+(MIN_STOPS.length-1)+'" step="1" value="'+(st.minMax!==null?stopIdx(st.minMax):MIN_STOPS.length-1)+'" aria-label="Compra mínima hasta"></div>'+
-     '<div class="mrs"><span>Sin mínimo</span><span>'+money(MIN_MAX)+' o más</span></div>'+
-     '<div class="mins">'+[[0,0,"Sin mínimo (por unidad)"],[0,50000,"Hasta $50.000"],[50000,100000,"$50.000 a $100.000"],[100000,200000,"$100.000 a $200.000"],[0,"","Cualquiera"]].map(function(m){return '<button type="button" data-lo="'+m[0]+'" data-hi="'+m[1]+'">'+m[2]+'</button>';}).join("")+'</div>'+
-     '<small style="display:block;color:var(--muted);font-size:12px;margin-top:6px">Los locales que venden por unidad cuentan como sin mínimo. Al elegir un rango quedan afuera los mayoristas que no publican su compra mínima.</small></div>'+
+     '<div class="mrs"><span>$0</span><span>'+money(MIN_MAX)+' o más</span></div>'+
+     '<div class="mins">'+[[0,0,"Sin mínimo"],[0,50000,"Hasta $50.000"],[50000,100000,"$50.000 a $100.000"],[100000,200000,"$100.000 a $200.000"],[0,"","Cualquiera"]].map(function(m){return '<button type="button" data-lo="'+m[0]+'" data-hi="'+m[1]+'">'+m[2]+'</button>';}).join("")+'</div>'+
+     '<small style="display:block;color:var(--muted);font-size:12px;margin-top:6px">Al elegir un rango quedan afuera los mayoristas que no publican su compra mínima.</small></div>'+
    '<div><label class="t" for="fProv">Provincia</label><select id="fProv"><option value="">Todo el país</option>'+Object.keys(provs).sort(function(a,b){return provs[b]-provs[a];}).map(function(p){return '<option value="'+esc(p)+'"'+(st.prov===p?" selected":"")+'>'+esc(p)+' ('+provs[p]+')</option>';}).join("")+'</select></div>'+
    '<div><span class="t" style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px">Ir a una zona</span><div class="zones">'+ZONES.map(function(z,i){return '<button type="button" data-z="'+i+'">'+z[0]+'</button>';}).join("")+'</div></div>'+
    '<button type="button" class="btn red" id="fOk">Ver '+visible().length+' locales'+'</button></div>');
@@ -788,19 +791,22 @@ $("filtBtn").addEventListener("click",function(){
   $("fProv").addEventListener("change",function(){st.prov=this.value;upd();});
   function paintMr(){if(!$("mrLo"))return;var N=MIN_STOPS.length-1,li=+$("mrLo").value,hi=+$("mrHi").value;if(li>hi){var x=li;li=hi;hi=x;}
     st.minLo=MIN_STOPS[li];st.minMax=hi>=N?null:MIN_STOPS[hi];$("mrFill").style.left=(li/N*100)+"%";$("mrFill").style.right=(100-hi/N*100)+"%";
-    $("mrv").textContent=st.minMax===0?"Solo locales sin compra mínima":minActive()?"Compra mínima "+minRangeTxt():"Cualquier compra mínima";
+    $("mrv").textContent=st.minMax===0?"Solo mayoristas sin compra mínima":minActive()?"Compra mínima "+minRangeTxt():"Cualquier compra mínima";
     [].forEach.call(sheet.querySelectorAll("[data-lo]"),function(b){b.classList.toggle("on",+b.getAttribute("data-lo")===st.minLo&&(b.getAttribute("data-hi")===""?null:+b.getAttribute("data-hi"))===st.minMax);});upd();}
   if($("mrLo")){["mrLo","mrHi"].forEach(function(id){$(id).addEventListener("input",paintMr);});
     [].forEach.call(sheet.querySelectorAll("[data-lo]"),function(b){b.addEventListener("click",function(){$("mrLo").value=stopIdx(+b.getAttribute("data-lo"));$("mrHi").value=b.getAttribute("data-hi")===""?MIN_STOPS.length-1:stopIdx(+b.getAttribute("data-hi"));paintMr();});});paintMr();}
+  [].forEach.call(sheet.querySelectorAll("[data-cn]"),function(b){b.addEventListener("click",function(){st.canal=b.getAttribute("data-cn");
+    [].forEach.call(sheet.querySelectorAll("[data-cn]"),function(x){x.classList.toggle("on",x===b);});$("mrBox").hidden=st.canal!=="may";
+    if(st.canal!=="may"){$("mrLo").value=0;$("mrHi").value=MIN_STOPS.length-1;}paintMr();});});
   $("fOk").addEventListener("click",function(){closeSheet();render(true);if(st.code&&st.prov)logSearch();});
   Array.prototype.forEach.call(sheet.querySelectorAll("[data-z]"),function(b){b.addEventListener("click",function(){var z=ZONES[+b.getAttribute("data-z")][1],a=proj(z[0],z[1]),c=proj(z[2],z[3]);closeSheet();render(false);animateTo(fitBox(Math.min(a[0],c[0]),Math.min(a[1],c[1]),Math.max(a[0],c[0]),Math.max(a[1],c[1])),700);});});
 });
 function kfmt(v){return v>=1000?"$"+(v/1000).toLocaleString("es-AR")+"k":"$"+v;}
-function updBadge(){var n=(st.prov?1:0)+(minActive()?1:0),b=$("fBadge");b.textContent=n;b.hidden=!n;
+function updBadge(){var n=(st.prov?1:0)+(st.canal?1:0),b=$("fBadge");b.textContent=n;b.hidden=!n;
   var f=$("fPill");if(!f)return;var txt,on=false;
-  var parts=[];if(minActive())parts.push(st.minMax===0?"Sin mínimo":st.minLo&&st.minMax!==null?kfmt(st.minLo)+"–"+kfmt(st.minMax):st.minMax!==null?"Hasta "+kfmt(st.minMax):"Desde "+kfmt(st.minLo));if(st.prov)parts.push(st.prov);
-  on=parts.length>0;txt=on?esc(parts.join(" · ")):'<span class="lg2">Compra mínima y zona</span><span class="sm2">Filtros</span>';
-  f.innerHTML=txt+" ▾";f.classList.toggle("on",on);f.setAttribute("aria-label","Filtrar por compra mínima y provincia");}
+  var parts=[];if(st.canal==="min")parts.push("Por unidad");else if(st.canal==="may"&&!minActive())parts.push("Por mayor");if(minActive())parts.push(st.minMax===0?"Mayor sin mínimo":st.minLo&&st.minMax!==null?kfmt(st.minLo)+"–"+kfmt(st.minMax):st.minMax!==null?"Hasta "+kfmt(st.minMax):"Desde "+kfmt(st.minLo));if(st.prov)parts.push(st.prov);
+  on=parts.length>0;txt=on?esc(parts.join(" · ")):'<span class="lg2">Por unidad o por mayor</span><span class="sm2">Filtros</span>';
+  f.innerHTML=txt+" ▾";f.classList.toggle("on",on);f.setAttribute("aria-label","Filtrar por cómo comprás, compra mínima y provincia");}
 var tt;function toast(t){var el=$("toast");el.textContent=t;el.hidden=false;clearTimeout(tt);tt=setTimeout(function(){el.hidden=true;},4500);}
 
 /* ---------- tiras de chips: flechas, degradado, rueda y arrastre ---------- */
@@ -848,7 +854,7 @@ function flushSearch(){if(lsT){clearTimeout(lsT);lsT=null;logSearchNow();}}
 function logSearchNow(){lsT=null;var key=st.code+"|"+st.colors.join("+")+"|"+st.sizes.join("+")+"|"+st.prov;if(key===lastKey)return;lastKey=key;push({t:"s",ts:Date.now(),a:st.code,c:st.colors.join("+"),z:st.sizes.join("+"),p:st.prov||"",r:visible().length});}
 function logUnknown(txt){push({t:"s",ts:Date.now(),a:"?"+txt.slice(0,20),c:"",p:st.prov||"",r:0});toast("No encontramos el artículo “"+txt+"”.");}
 function logClick(s,act,m){flushSearch();push({t:"c",ts:Date.now(),a:st.code||"",c:st.colors.join("+"),z:st.sizes.join("+"),st:s.i,p:s.prov,k:act||"",m:m||(s.inMin?"min":"may")});}
-function push(ev){if(!ev.m)ev.m=st.minLo>0?"may":st.minMax===0?"min":"all";myEvents.push(ev);if(dbReady)queueWrite();if(!$("view-datos").hidden)drawData();}
+function push(ev){if(!ev.m)ev.m=st.canal||"all";myEvents.push(ev);if(dbReady)queueWrite();if(!$("view-datos").hidden)drawData();}
 var realAcc=null,realEvents=[],realLoaded=false,realErr="",isAdmin=null;
 /* Envío de eventos anónimos a la base (solo en la página pública). */
 var sent=0,sendT=null;
@@ -955,9 +961,9 @@ $("csvBtn").addEventListener("click",function(){var b=this;b.disabled=true;b.tex
 
 /* ---------- compartir un artículo ---------- */
 var SHARE_BASE=location.origin+"/";
-function shareHash(){var h="#a="+encodeURIComponent(st.code);if(st.colors.length)h+="&c="+encodeURIComponent(st.colors.join(","));if(st.sizes.length)h+="&z="+encodeURIComponent(st.sizes.join(","));if(st.prov)h+="&p="+encodeURIComponent(st.prov);return h;}
+function shareHash(){var h="#a="+encodeURIComponent(st.code);if(st.colors.length)h+="&c="+encodeURIComponent(st.colors.join(","));if(st.sizes.length)h+="&z="+encodeURIComponent(st.sizes.join(","));if(st.prov)h+="&p="+encodeURIComponent(st.prov);if(st.canal)h+="&m="+st.canal;return h;}
 function readShare(){var h=location.hash||"";if(h.indexOf("#a=")!==0)return false;var p={};h.slice(1).split("&").forEach(function(kv){var i=kv.indexOf("=");if(i>0)p[kv.slice(0,i)]=decodeURIComponent(kv.slice(i+1));});
-  if(!p.a||!ART[p.a])return false;st.code=p.a;st.colors=p.c?p.c.split(","):[];st.sizes=p.z?p.z.split(","):[];st.prov=p.p&&STORES.some(function(s){return s.prov===p.p;})?p.p:"";st.sel="";return true;}
+  if(!p.a||!ART[p.a])return false;st.code=p.a;st.colors=p.c?p.c.split(","):[];st.sizes=p.z?p.z.split(","):[];st.prov=p.p&&STORES.some(function(s){return s.prov===p.p;})?p.p:"";st.canal=p.m==="min"||p.m==="may"?p.m:"";st.sel="";return true;}
 $("shareBtn").addEventListener("click",function(){var a=ART[st.code];if(!a)return;var url=SHARE_BASE+shareHash(),txt="¿Dónde comprar el Kaury "+a.code+(st.colors.length?" en "+joinO(st.colors).toLowerCase():"")+"? Mirá las tiendas que lo tienen:";
   var box=$("shbox");box.innerHTML='<h4>Compartir el '+esc(a.code)+esc(selDesc())+'</h4><p>El link abre el mapa con este artículo'+(st.colors.length||st.sizes.length?', color y talle':'')+' ya elegidos.</p><input class="lnk" readonly value="'+esc(url)+'"><div class="row"><a class="pri" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(txt+" "+url)+'">WhatsApp</a><button type="button" id="shCopy">Copiar link</button><button type="button" id="shClose">Cerrar</button></div>';
   box.hidden=false;var inp=box.querySelector(".lnk");inp.addEventListener("focus",function(){inp.select();});
@@ -972,7 +978,7 @@ updBadge();
 
 /* ---------- cuentas: entrar con Google, "Avisame cuando haya" ---------- */
 var ACCOUNTS=MODE==="public"&&!!GCID,me=null,myAlerts=[],pendingAlert=null,gisLoading=null;
-function curAlert(){return {a:st.code,c:st.colors.join("+"),z:st.curva?"curva":st.sizes.join("+"),p:st.prov||"",m:"all"};}
+function curAlert(){return {a:st.code,c:st.colors.join("+"),z:st.curva?"curva":st.sizes.join("+"),p:st.prov||"",m:st.canal||"all"};}
 function hasAlert(x){return myAlerts.some(function(y){return y.active&&y.a===x.a&&y.c===x.c&&y.z===x.z&&y.p===x.p&&(y.m||"min")===x.m;});}
 function alertDesc(x){var a=ART[x.a],cs=x.c?x.c.split("+"):[],zs=x.z&&x.z!=="curva"?x.z.split("+"):[];return "Kaury "+x.a+(x.m==="may"?" · por mayor":"")+(cs.length?" · "+joinO(cs):"")+(x.z==="curva"?" · curva completa":"")+(zs.length?" · talle "+joinO(zs):"")+(x.p?" · "+x.p:"")+(a?'<small>'+esc(a.name)+'</small>':"");}
 function api(path,opt){opt=opt||{};opt.credentials="same-origin";if(opt.body){opt.method=opt.method||"POST";opt.headers={"Content-Type":"application/json"};opt.body=JSON.stringify(opt.body);}
