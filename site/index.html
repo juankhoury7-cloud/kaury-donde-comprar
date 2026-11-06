@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
-<title>Kaury · Dónde comprar · Venta minorista</title>
+<title>Kaury · Dónde comprar · Por unidad y por mayor</title>
 <meta name="description" content="Buscá un artículo Kaury por número, elegí color y talle, y te mostramos las tiendas online que lo tienen en stock, con el link directo.">
 <meta property="og:title" content="Kaury · Dónde comprar">
 <meta property="og:description" content="Encontrá qué tiendas online tienen tu artículo Kaury en stock, en tu color y talle.">
@@ -564,7 +564,7 @@ $("strip2").addEventListener("click",function(e){
 /* ---------- resumen ---------- */
 function renderSum(vis){
   var a=st.code?ART[st.code]:null,el=$("sum");
-  if(!a){el.className="sum";el.innerHTML='<b>'+vis.length+'</b><span class="s">locales'+(st.prov?" en "+esc(st.prov):" en todo el país")+(minActive()?' con compra mínima '+esc(minRangeTxt()):'')+lgd(vis)+'<button type="button" class="lstb">Ver lista por compra mínima ›</button></span>';}
+  if(!a){el.className="sum";el.innerHTML='<b>'+vis.length+'</b><span class="s">locales'+(st.prov?" en "+esc(st.prov):" en todo el país")+(minActive()?(st.minMax===0?' sin compra mínima':' con compra mínima '+esc(minRangeTxt())):'')+lgd(vis)+'<button type="button" class="lstb">Ver lista por compra mínima ›</button></span>';}
   else if(!vis.length){var al=alternatives(a);el.className="sum zero";
     el.innerHTML='<span class="s"><b>No hay</b> el '+esc(a.code)+esc(selDesc())+(st.curva?' en curva completa':'')+(st.prov?" en "+esc(st.prov):"")+' en ninguna tienda hoy.'+(al.length?' Pero hay:':' Probá sin filtros.')+'</span>'+
       (al.length?'<div class="alts">'+al.map(function(x,i){return '<button type="button" class="alt" data-i="'+i+'">'+(x.c&&x.c.length===1?'<span class="dot" style="background:'+(HEX[x.c[0]]||"#cfcfcf")+'"></span>':'')+esc(x.label)+' <i>'+x.n+'</i></button>';}).join("")+'</div>':'')+
