@@ -1,0 +1,99 @@
+{
+ "www.majilen.com.ar": {
+  "name": "majilen",
+  "origin": "https://www.majilen.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ]
+ },
+ "casapompi.com.ar": {
+  "name": "casapompi",
+  "origin": "https://casapompi.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ]
+ },
+ "hadasmagicaslenceria.mitiendanube.com": {
+  "name": "hadas",
+  "origin": "https://hadasmagicaslenceria.mitiendanube.com",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ]
+ },
+ "lenceriajulieta.com": {
+  "name": "julieta",
+  "origin": "https://lenceriajulieta.com",
+  "listings": [
+   "/mujer3/masrcas/kaury3/?page={p}"
+  ]
+ },
+ "www.zonatextil.com.ar": {
+  "name": "zonatextil",
+  "origin": "https://www.zonatextil.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ]
+ },
+ "treshermanos.com.ar": {
+  "name": "treshermanos",
+  "origin": "https://treshermanos.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ]
+ },
+ "lxmayorista.com.ar": {
+  "name": "lx",
+  "origin": "https://lxmayorista.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ]
+ },
+ "deamores.empretienda.com.ar": {
+  "name": "deamores",
+  "origin": "https://deamores.empretienda.com.ar",
+  "listings": [
+   "/search?q=kaury&page={p}"
+  ]
+ },
+ "kaurycentro.empretienda.com.ar": {
+  "name": "kaurycentro",
+  "origin": "https://kaurycentro.empretienda.com.ar",
+  "listings": [
+   "/general/conjuntos-kaury-avril-kaury?page={p}",
+   "/general/bodys?page={p}",
+   "/general/pack-de-bombis?page={p}",
+   "/general/summer?page={p}",
+   "/general/tops?page={p}",
+   "/general/ofertas?page={p}"
+  ]
+ },
+ "alevmayorista.com": {
+  "name": "alev",
+  "origin": "https://alevmayorista.com",
+  "listings": [
+   "/etiqueta/kaury/page/{p}/"
+  ]
+ },
+ "lenceriafylo.com": {
+  "name": "fylo",
+  "origin": "https://lenceriafylo.com",
+  "listings": [
+   "/categoria-producto/lenceria-femenina/page/{p}/?filtering=1&filter_product_brand=817",
+   "/tienda/page/{p}/?filtering=1&filter_product_brand=817"
+  ]
+ },
+ "tiendanap.com": {
+  "name": "tiendanap",
+  "origin": "https://tiendanap.com",
+  "listings": [
+   "/marcas/kaury/?page={p}"
+  ]
+ },
+ "lizalenceria.com": {
+  "name": "liza",
+  "origin": "https://www.lizalenceria.com",
+  "listings": [
+   "/page/{p}/?s=kaury&post_type=product"
+  ]
+ }
+}

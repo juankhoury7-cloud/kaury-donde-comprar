@@ -1,0 +1,13 @@
+{
+  "name": "kaury-donde-comprar",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "stock": "node scraper/run.mjs",
+    "build": "node scripts/build-site.mjs",
+    "test": "node test/parse.test.mjs"
+  },
+  "dependencies": {
+    "node-html-parser": "^6.1.13"
+  }
+}
