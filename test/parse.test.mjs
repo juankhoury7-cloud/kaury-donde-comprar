@@ -52,3 +52,12 @@ console.log('empretienda', s3.ent, N('8165', s3.ent), N.vars('8165', s3.vars));
 assert.equal(N.vars('8165', s3.vars), null);
 assert.equal((await readStock('https://a.test/nada/')).ent, 0);
 console.log('OK');
+// talle y color juntos en una sola opción, y talles escritos de formas raras
+{
+  const ent = { '-': ['100 ROJO', '95 NEGRO', '95 gris humo'], 'Negro': ['TALLE-NUN'], 'Gris-rosa vintage-lila': ['TALLE UNICO MAX'], 'Blanco-negro': ['UNICOS'] };
+  const r = N('4030', ent);
+  console.log('combinados', r);
+  assert.deepEqual(r['Rojo'], ['100']); assert.deepEqual(r['Negro'].sort(), ['95', 'Único'].sort()); assert.deepEqual(r['Gris humo'], ['95']);
+  assert.ok(Object.values(r).every(zs => zs.every(z => !/\s/.test(z))));
+  console.log('combinados OK');
+}

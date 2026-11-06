@@ -134,7 +134,7 @@ export async function readStock(url) {
 // ---------- normalización de colores y talles contra el catálogo ----------
 const nz = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   .replace(/\bfluor\b/g, 'fluo').replace(/\bvinta\b/g, 'vintage').replace(/\s+/g, ' ').trim();
-const SYN = { 'rosa viejo': 'rosa vintage', 'amafl': 'amarillo fluo', 'amari fluo': 'amarillo fluo', 'amarilla fluo': 'amarillo fluo', 'verde mili': 'verde militar', 'negro nude': 'negro - nude', 'piel': 'nude', 'piel - nude': 'nude', 'humo': 'gris humo', 'militar': 'verde militar', 'verde mil': 'verde militar', 'verde ingl': 'verde ingles', 'gris melan': 'gris melange', 'ciru': 'ciruela', 'fucsia': 'fucsia fluo', 'amarillo': 'amarillo fluo', 'amarillo fluo': 'amarillo fluo', 'bordo': 'bordo' };
+const SYN = { 'banco': 'blanco', 'rosa viejo': 'rosa vintage', 'amafl': 'amarillo fluo', 'amari fluo': 'amarillo fluo', 'amarilla fluo': 'amarillo fluo', 'verde mili': 'verde militar', 'negro nude': 'negro - nude', 'piel': 'nude', 'piel - nude': 'nude', 'humo': 'gris humo', 'militar': 'verde militar', 'verde mil': 'verde militar', 'verde ingl': 'verde ingles', 'gris melan': 'gris melange', 'ciru': 'ciruela', 'fucsia': 'fucsia fluo', 'amarillo': 'amarillo fluo', 'amarillo fluo': 'amarillo fluo', 'bordo': 'bordo' };
 const PACK = new Set(['varios', 'surtido', 'colores varios', 'un', 'unico', '-', 'u']);
 
 export function makeNormalizer(catalog, sizes) {
@@ -162,19 +162,33 @@ export function makeNormalizer(catalog, sizes) {
     if (cand.length === 1) return cand[0];
     const r = String(raw).trim(); return r.charAt(0).toUpperCase() + r.slice(1).toLowerCase();
   }
-  function size(z) { const s = nz(z); if (['u', 'un', 'unico'].includes(s)) return 'Único'; return s.replace(/\//g, '-').toUpperCase(); }
+  function size(z) {
+    let s = nz(z).replace(/^talle[\s-]*/, '').trim();
+    if (/^(u|un|nun|unico|unicos|unico max|talle unico)$/.test(s) || /unic|^nun$/.test(s)) return 'Único';
+    return s.replace(/\//g, '-').replace(/\s*-\s*/g, '-').toUpperCase();
+  }
+  // Algunas tiendas cargan talle y color juntos en una sola opción ("100 Rojo", "95 Gris humo"): se separan.
+  const SZ1 = /^(\d{1,3}|xxs|xs|s|m|l|xl|xxl|xxxl|[sml]-[mlx]+l?)\s+([a-záéíóúñ].*)$/i;
+  function split(c, z) {
+    const m = SZ1.exec(String(z).trim());
+    if (m && (!c || ['-', 'u', 'unico', 'único'].includes(nz(c)))) return [m[2], m[1]];
+    if (m) return [c, m[1]];
+    return [c, z];
+  }
   /** [[colorCrudo, talleCrudo, sufijo]] -> {"Color|Talle": sufijo} con los nombres del catálogo */
   function normVars(code, vars) {
-    const o = {}; for (const [c, z, sx] of vars || []) { const k = color(code, c) + '|' + size(z); if (!(k in o)) o[k] = sx; }
+    const o = {}; for (const [c0, z0, sx] of vars || []) { const [c, z] = split(c0, z0), k = color(code, c) + '|' + size(z); if (!(k in o)) o[k] = sx; }
     return Object.keys(o).length ? o : null;
   }
   /** {colorCrudo:[tallesCrudos]} -> {ColorCatálogo:[Talles ordenados]} */
   function normalize(code, ent) {
     if (ent === '?' || ent === 0) return ent;
     const out = {};
-    for (const [c, zs] of Object.entries(ent)) {
-      const lab = color(code, c); out[lab] = out[lab] || [];
-      for (const z of zs) { const Z = size(z); if (!out[lab].includes(Z)) out[lab].push(Z); }
+    for (const [c0, zs] of Object.entries(ent)) {
+      for (const z0 of zs) {
+        const [c, z] = split(c0, z0), lab = color(code, c), Z = size(z);
+        (out[lab] = out[lab] || []).includes(Z) || out[lab].push(Z);
+      }
     }
     const order = sizes[code] || [];
     for (const k in out) out[k].sort((a, b) => { const ia = order.indexOf(a), ib = order.indexOf(b); return ((ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib)) || (a.length - b.length) || (a < b ? -1 : a > b ? 1 : 0); });
