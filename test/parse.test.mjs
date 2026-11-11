@@ -130,3 +130,13 @@ console.log('OK');
   assert.equal(r.prods['100'], 'https://m.test/producto/kaury-art-100-pack/');
   console.log('art. 100 bien identificado OK');
 }
+{ // WooCommerce con variación "cualquier color / cualquier talle": se arma el link con cada opción
+  const { readStock } = await import('../scraper/lib.mjs');
+  const dv = JSON.stringify([{ attributes: { attribute_pa_colores: '', attribute_pa_talles: '' }, is_in_stock: true, is_purchasable: true }]).replace(/"/g, '&quot;');
+  const h = `<form class="variations_form" data-product_variations="${dv}"><select name="attribute_pa_colores"><option value="">Elegí</option><option value="negro">Negro</option><option value="verde-militar">Verde militar</option></select><select name="attribute_pa_talles"><option value="">Elegí</option><option value="90">90</option><option value="95">95</option></select></form>`;
+  const orig = globalThis.fetch; globalThis.fetch = async () => new Response(h, { status: 200 });
+  const r = await readStock('https://x.test/tienda/kaury-art-4000/'); globalThis.fetch = orig;
+  assert.deepEqual(r.ent, { negro: ['90', '95'], 'verde militar': ['90', '95'] });
+  assert.ok(r.vars.some(([c, z, sx]) => c === 'negro' && z === '95' && sx === 'attribute_pa_colores=negro&attribute_pa_talles=95'));
+  console.log('woo "cualquiera" OK');
+}

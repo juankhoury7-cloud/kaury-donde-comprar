@@ -154,6 +154,13 @@ function woo(d) {
   if (raw === 'false') return 'ajax';
   let v; try { v = JSON.parse(unesc(raw)); } catch { try { v = JSON.parse(raw); } catch { return null; } }
   if (!Array.isArray(v)) return null;
+  // variaciones con un atributo vacío = "cualquiera": se abren en todas las opciones del selector (para poder armar el link)
+  const opts = {}; for (const sel of d.querySelectorAll('select[name^="attribute_"]')) opts[sel.getAttribute('name')] = sel.querySelectorAll('option').map(o => o.getAttribute('value')).filter(Boolean);
+  if (v.some(x => Object.values(x.attributes || {}).some(a => !a))) {
+    const exp = [];
+    for (const x of v) { let combos = [{}]; for (const [k, val] of Object.entries(x.attributes || {})) { const vals = val ? [val] : (opts[k] && opts[k].length ? opts[k] : ['']); combos = combos.flatMap(c => vals.map(w => ({ ...c, [k]: w }))); } combos.slice(0, 400).forEach(at => exp.push({ ...x, attributes: at })); }
+    v = exp.slice(0, 800);
+  }
   return v.map(x => { const at = Object.entries(x.attributes || {}), vals = at.map(([, a]) => norm(a));
     // primero por el nombre del atributo (talle/size, color); si no, por el formato del valor
     let z = norm((at.find(([k]) => /talle|size|tama/i.test(k)) || [])[1]), c = norm((at.find(([k]) => /colou?r/i.test(k)) || [])[1]);

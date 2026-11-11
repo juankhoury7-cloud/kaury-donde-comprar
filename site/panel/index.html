@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-5j7UVTA+kpBZk47+fmeLX9EeBIbptkXzInugkOc4ZlA=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-oYiTVqAPg3VJWpwRdCBcah6KtnfjQpWDELzKcvWO3hw=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
 <title>Kaury · Panel de datos</title>
@@ -236,6 +236,7 @@ a{color:inherit}
 .btn.red:hover{background:var(--red-d)}
 .btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}
 .btn.dark:hover{background:#333}
+.pick{display:block;margin:-4px 0 10px;font-size:12px;color:var(--muted);text-align:center}
 .tg.blk{background:var(--ink);border-color:var(--ink);color:#fff}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .lst{display:grid;gap:6px;margin-top:12px}
@@ -746,19 +747,23 @@ function pickVar(ch,code){var vm=ch.vars&&ch.vars[code],ent=ch.stk[code];if(!vm|
   var m=[];(st.colors.length?st.colors:Object.keys(ent)).forEach(function(c){if(ent[c])ent[c].forEach(function(z){if((!st.sizes.length||st.sizes.indexOf(z)>=0)&&vm[c+"|"+z])m.push({c:c,z:z,sx:vm[c+"|"+z]});});});
   if(!m.length)return null;
   /* con color y talle elegidos va la primera combinación con stock; si eligió solo uno de los dos, solo si queda una única opción */
-  return (st.colors.length&&st.sizes.length)||m.length===1?m[0]:null;}
+  if((st.colors.length&&st.sizes.length)||m.length===1)return m[0];
+  /* WooCommerce admite elegir solo el color (o solo el talle): se manda únicamente ese dato */
+  if(/attribute_/.test(m[0].sx)){var keep=st.colors.length?/colou?r/i:/talle|size|tama/i,part=m[0].sx.split("&").filter(function(p){return keep.test(p.split("=")[0]);}).join("&");
+    if(part&&m.every(function(x){return x.sx.split("&").filter(function(p){return keep.test(p.split("=")[0]);}).join("&")===part;}))return {c:st.colors[0]||"",z:st.sizes[0]||"",sx:part,partial:true};}
+  return null;}
 function shopUrl(ch){
   if(!ch||!ch.web)return null;
-  if(st.code&&ch.prod[st.code]){var u=ch.prod[st.code],v=ch.m==="min"?pickVar(ch,st.code):null;
+  if(st.code&&ch.prod[st.code]){var u=ch.prod[st.code],v=pickVar(ch,st.code);
     if(v)return {u:u+(u.indexOf("?")>=0?"&":"?")+v.sx,deep:true,v:v,m:ch.m};
     return {u:u,deep:true,m:ch.m};}
   return {u:ch.web,deep:false,m:ch.m};
 }
 function shopBtn(sh,first){var host=esc(sh.u.replace(/^https?:\/\/(www\.)?/,"").split(/[\/?#]/)[0]),may=sh.m==="may";
   var both=sh.m==="both",t=sh.deep?(may?"Comprar el "+esc(st.code)+" por mayor":"Comprar el "+esc(st.code)+(sh.v?" "+esc(varLabel(sh.v)):"")+(both?"":" por unidad")):(may?"Ver Kaury en su tienda mayorista":"Ver Kaury en su tienda online");
-  return '<a class="btn red" data-act="web" data-m="'+sh.m+'" href="'+esc(sh.u)+'" target="_blank" rel="noopener" style="flex-direction:column;gap:2px"><span>'+t+' →</span><small style="font-weight:500;opacity:.85;font-size:11.5px">'+host+(may?" · "+esc(minLabelShort(sh.s)):both?" · por unidad o por mayor"+(sh.s.minAmt?", mínimo por mayor "+esc(sh.s.minTxt||money(sh.s.minAmt)):""):"")+'</small></a>';}
+  return '<a class="btn red" data-act="web" data-m="'+sh.m+'" href="'+esc(sh.u)+'" target="_blank" rel="noopener" style="flex-direction:column;gap:2px"><span>'+t+' →</span><small style="font-weight:500;opacity:.85;font-size:11.5px">'+host+(may?" · "+esc(minLabelShort(sh.s)):both?" · por unidad o por mayor"+(sh.s.minAmt?", mínimo por mayor "+esc(sh.s.minTxt||money(sh.s.minAmt)):""):"")+'</small></a>'+(sh.deep&&!sh.v&&(st.colors.length||st.sizes.length)?'<small class="pick">Al entrar, elegí '+esc([st.colors.join(" o "),st.sizes.length?"talle "+st.sizes.join(" o "):""].filter(Boolean).join(" · "))+': esta tienda no permite dejarlo elegido desde acá.</small>':'');}
 function minLabelShort(s){return s.minAmt===0?"sin compra mínima":s.minAmt?"mínimo "+(s.minTxt||money(s.minAmt)):s.minTxt&&s.minTxt!=="Consultá condiciones"?"mínimo "+s.minTxt:"consultá el mínimo";}
-function varLabel(v){return v.c+(v.z&&v.z!=="Único"?" · talle "+v.z:"");}
+function varLabel(v){return [v.c,v.z&&v.z!=="Único"?"talle "+v.z:""].filter(Boolean).join(" · ");}
 function select(id){
   st.sel=id;var s=STORES[+id.slice(1)],a=st.code?ART[st.code]:null,stock=a?stockFor(a.code)[s.id]:null,shops=s.chs.map(shopUrl).filter(Boolean);
   if(a&&shops.some(function(x){return x.deep;}))shops=shops.filter(function(x){return x.deep;});
