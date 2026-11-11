@@ -331,6 +331,7 @@ a{color:inherit}
 .cols.runs div.w{background:#d39b00!important}.cols.runs div.gap{background:var(--red)!important;opacity:.85}.cols.runs div.e{background:var(--line)!important;height:8%;border-radius:2px 2px 0 0}
 .hl{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
 .hl span:last-child{text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums}
+.acct[hidden]{display:none!important}
 .dash{flex:1 1 auto;overflow-y:auto;background:var(--bg)}
 .dash[hidden]{display:none}
 .dwrap{max-width:1160px;margin:0 auto;padding:26px 16px 60px}
@@ -1275,10 +1276,11 @@ function showPanelLogin(msg){if(MODE!=="panel")return;$("login").hidden=false;$(
 if(MODE==="panel"){$("login").addEventListener("submit",function(e){e.preventDefault();var v=$("lpass").value.trim();if(!v)return;$("lerr").textContent="Revisando…";
   fetch(API+"/admin/events?days=1",{headers:{"Authorization":"Bearer "+encodeURIComponent(v)},cache:"no-store"}).then(function(r){if(r.status===401){$("lerr").textContent="Contraseña incorrecta.";return;}if(r.status===429){$("lerr").textContent="Demasiados intentos. Esperá 15 minutos.";return;}if(r.status===503){$("lerr").textContent="Falta configurar la contraseña del panel en Cloudflare.";return;}if(!r.ok){$("lerr").textContent="No se pudo conectar. Probá de nuevo.";return;}
    PASS=v;try{sessionStorage.setItem("kaury_panel",v);}catch(x){}$("login").hidden=true;enterPanel();},function(){$("lerr").textContent="No se pudo conectar. Probá de nuevo.";});});}
-function enterPanel(){isOwner=true;$("ownerNav").hidden=false;$("upd").style.marginLeft="12px";srcReal=true;$("srcReal").setAttribute("aria-pressed","true");$("srcDemo").setAttribute("aria-pressed","false");if(!location.hash)location.hash="#datos";loadReal();route();}
+/* El panel muestra solo los datos: sin Mapa / Panel / Ver como cliente ni Mi cuenta. */
+function enterPanel(){$("canalLbl").textContent="Panel de datos";isOwner=true;$("ownerNav").hidden=true;$("acctBtn").hidden=true;$("upd").style.marginLeft="auto";srcReal=true;$("srcReal").setAttribute("aria-pressed","true");$("srcDemo").setAttribute("aria-pressed","false");if(location.hash!=="#datos")history.replaceState(null,"","#datos");loadReal();route();}
 $("asClient").addEventListener("click",function(){if(MODE==="panel"){window.open("/","_blank");return;}asClient=true;$("ownerNav").hidden=true;if(location.hash==="#datos")location.hash="#mapa";else route();toast("Así ve la página el público. Recargá para volver a ver el panel.");});
 function route(){
-  var v=(location.hash==="#datos"&&isOwner&&!asClient)?"datos":"mapa";
+  var v=MODE==="panel"&&isOwner?"datos":(location.hash==="#datos"&&isOwner&&!asClient)?"datos":"mapa";
   $("view-mapa").hidden=v!=="mapa";$("view-datos").hidden=v!=="datos";
   $("tab-mapa").setAttribute("aria-current",v==="mapa"?"page":"false");$("tab-datos").setAttribute("aria-current",v==="datos"?"page":"false");
   if(v==="datos")drawData();else{size();applyView();}
