@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-ed+44j8nGfzNgFh37T55/0DTZ3ZRkT40cJnn4L+Ii9k=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-+7FUxFsxpVpDrMPaWQwGUpV1QwxZ59tK6rvHBZ96Ynw=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
 <title>Kaury · Dónde comprar · Por unidad y por mayor</title>
@@ -586,10 +586,10 @@ function renderSum(vis){
       (al.length?'<div class="alts">'+al.map(function(x,i){return '<button type="button" class="alt" data-i="'+i+'">'+(x.c&&x.c.length===1?'<span class="dot" style="background:'+(HEX[x.c[0]]||"#cfcfcf")+'"></span>':'')+esc(x.label)+' <i>'+x.n+'</i></button>';}).join("")+'</div>':'')+
       (ACCOUNTS?(hasAlert(curAlert())?'<button type="button" class="ntf on">✓ Te avisamos por mail cuando haya</button>':'<button type="button" class="ntf">🔔 Avisame cuando haya</button>'):'');
     el._alts=al;}
-  else{var nw={};vis.forEach(function(s){nw[s.web]=1;});var nt=Object.keys(nw).length;el.className="sum";el.innerHTML='<b>'+vis.length+'</b><span class="s">'+(vis.length===1?"local":"locales")+esc(canalTxt())+(vis.length===1?" tiene":" tienen")+' el '+esc(a.code)+esc(selDesc())+(st.curva?' en curva completa':'')+(st.prov?" en "+esc(st.prov):"")+' en su tienda online'+(nt!==vis.length?' ('+nt+' tiendas)':'')+lgd(vis)+'<span style="color:var(--red);font-weight:600;display:block;margin-top:3px">Tocá uno y vas directo al artículo</span></span>';}
+  else{var nw={};vis.forEach(function(s){nw[s.web]=1;});var nt=Object.keys(nw).length;el.className="sum";el.innerHTML='<b>'+vis.length+'</b><span class="s">'+(vis.length===1?"local":"locales")+esc(canalTxt())+(vis.length===1?" tiene":" tienen")+' el '+esc(a.code)+esc(selDesc())+(st.curva?' en curva completa':'')+(st.prov?" en "+esc(st.prov):"")+' en su tienda online'+(nt!==vis.length?' ('+nt+' tiendas)':'')+lgd(vis)+'<span style="color:var(--red);font-weight:600;display:block;margin-top:3px">Tocá uno y vas directo al artículo</span><button type="button" class="lstb" data-how="name">Ver lista de locales ›</button></span>';}
   el.hidden=!$("sheet").hidden;
 }
-$("sum").addEventListener("click",function(e){if(e.target.closest(".ntf")){askAlert();return;}if(e.target.closest(".lstb")){showList(curVis,"min");return;}var b=e.target.closest(".alt");
+$("sum").addEventListener("click",function(e){if(e.target.closest(".ntf")){askAlert();return;}var lb=e.target.closest(".lstb");if(lb){showList(curVis,lb.getAttribute("data-how")||"min");return;}var b=e.target.closest(".alt");
   if(b){var x=this._alts[+b.getAttribute("data-i")];if(!x)return;st.colors=x.c;st.sizes=x.z;st.curva=!!x.cv;if(x.allCanal){st.canal="";st.minLo=0;st.minMax=null;updBadge();}if(x.allProv)st.prov="";st.sel="";closeSheet();renderTop();render(true);logSearch();return;}
   if(!this.classList.contains("zero"))animateTo(fitTo(curVis),600);});
 /* Sin resultados: proponer lo más cercano que sí hay (otro talle del mismo color, otro color del mismo talle, todo el país). */
