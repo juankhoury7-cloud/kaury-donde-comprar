@@ -293,8 +293,8 @@ export function makeNormalizer(catalog, sizes) {
  *  Devuelve {prods:{código:link}, ent:{código:{color:[talles]}}, err}. */
 export async function apiShop(shop, CAT) {
   const prods = {}, ent = {}; let err = null;
-  for (let p = 1; p <= 30; p++) {
-    const r = await get(shop.api + 'products?page=' + p + '&limit=50', { timeout: 25000 });
+  for (let p = 1; p <= 40; p++) {
+    const r = await get(shop.api + 'products?page=' + p + '&limit=20', { timeout: 25000 });
     if (!r.html) { err = r.status || r.err || 'sin respuesta'; break; }
     let j; try { j = JSON.parse(r.html); } catch { err = 'json'; break; }
     const list = (j.data && j.data.products) || [];
@@ -305,7 +305,8 @@ export async function apiShop(shop, CAT) {
       prods[code] = shop.origin + '/producto/' + x.id;
       const e = {};
       for (const v of x.variants || []) {
-        if (!(v.stock > 0) && v.stockManagement !== false) continue;
+        // cuenta solo lo que tiene unidades: algunas variantes vienen marcadas "sin control" pero con stock 0 y la tienda no las vende
+        if (!(+v.stock > 0)) continue;
         const a = v.attr || {}, z = Object.entries(a).find(([k]) => /talle/i.test(k) && !/boxer/i.test(k)), c = a.color || a.Color || '';
         const zz = norm(z ? z[1] : 'u'), cc = norm(c) || '-'; (e[cc] = e[cc] || []).includes(zz) || e[cc].push(zz);
       }
