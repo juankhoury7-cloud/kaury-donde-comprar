@@ -7,7 +7,7 @@ import { runAlerts } from '../../lib/notify.js';
 import { saveHist } from '../../lib/hist.js';
 export async function onRequestPost({ request, env, waitUntil }) {
   if (!allow('in:' + ipOf(request), 6, 60e3)) return tooMany();
-  if (!same(bearer(request), secret(env.INGEST_TOKEN))) return json({ error: 'no autorizado' }, 401);
+  if (!same(bearer(request), secret(env.INGEST_TOKEN))) { await new Promise(r => setTimeout(r, 600)); return json({ error: 'no autorizado' }, 401); }
   let d; try { d = await request.json(); } catch { return json({ error: 'json inválido' }, 400); }
   if (!d || d.v !== 1 || typeof d.ts !== 'number' || typeof d.prods !== 'object' || typeof d.stock !== 'object') return json({ error: 'formato inválido' }, 400);
   // el chequeo diario de compra mínima y precios se guarda aparte: no viaja a los visitantes
@@ -18,7 +18,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
   await DB.prepare("INSERT INTO kv (k,v,at) VALUES ('stock',?1,?2) ON CONFLICT(k) DO UPDATE SET v=excluded.v, at=excluded.at").bind(v, Date.now()).run();
   if (mins) await DB.prepare("INSERT INTO kv (k,v,at) VALUES ('mins',?1,?2) ON CONFLICT(k) DO UPDATE SET v=excluded.v, at=excluded.at").bind(mins, Date.now()).run();
   // limpieza: los eventos de más de 13 meses y los contadores diarios viejos se borran
-  if (new Date().getUTCMinutes() < 5) await DB.batch([DB.prepare('DELETE FROM ev WHERE ts < ?1').bind(Date.now() - 400 * 864e5), DB.prepare("DELETE FROM kv WHERE k LIKE 'evn:%' AND at < ?1").bind(Date.now() - 7 * 864e5)]);
+  if (new Date().getUTCMinutes() < 5) await DB.batch([DB.prepare('DELETE FROM ev WHERE ts < ?1').bind(Date.now() - 400 * 864e5), DB.prepare("DELETE FROM kv WHERE k LIKE 'evn:%' AND at < ?1").bind(Date.now() - 7 * 864e5), DB.prepare("DELETE FROM kv WHERE k LIKE 'rl:%' AND at < ?1").bind(Date.now() - 2 * 864e5), DB.prepare('DELETE FROM sessions WHERE exp < ?1').bind(Date.now())]);
   invalidate();
   // registro de corridas del robot (últimas 400 ≈ 33 horas) para la pestaña Sistema del panel
   try {

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-KTltOzqRZl6f39zEuFbhX2D5iKrSW/hYP0oRyiWg7+c=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-7SVQWzF6QmaJ64USXYKsldEdD7kuU4s7JdRLSw/s6Ls=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
 <title>Kaury · Panel de datos</title>
@@ -976,11 +976,14 @@ window.addEventListener("pagehide",function(){flush(true);});
 var dbReady=MODE==="public";
 /* Panel: lectura con contraseña. */
 var PASS="";try{PASS=sessionStorage.getItem("kaury_panel")||"";}catch(e){}
+/* La misma búsqueda (o el mismo clic) repetida por la misma visita en el mismo día cuenta una sola vez:
+   así alguien que toca "buscar" muchas veces no infla los números. */
+function dedupeEv(L){var seen={};return L.filter(function(e){var k=[e.s,e.t,e.a,e.c,e.z,e.p,e.st,e.k,new Date(e.ts-3*3600e3).toISOString().slice(0,10)].join("|");if(seen[k])return false;seen[k]=1;return true;});}
 function loadReal(){
   if(MODE!=="panel"||!PASS){realErr="nodb";drawData();return;}
   var timer=setTimeout(function(){if(!realLoaded){realErr="slow";drawData();}},15000);
   fetch(API+"/admin/events?days=180",{headers:{"Authorization":"Bearer "+encodeURIComponent(PASS)},cache:"no-store"}).then(function(r){if(r.status===401)throw "auth";if(!r.ok)throw "err";return r.json();})
-  .then(function(d){clearTimeout(timer);realLoaded=true;realErr="";realEvents=d.ev||[];realAcc=d.cuentas||null;isAdmin=true;drawData();loadMins();loadUsers();if(PTAB==="locales")loadHist();},function(e){clearTimeout(timer);realErr=e==="auth"?"auth":"err";drawData();if(e==="auth")showPanelLogin("La contraseña ya no es válida.");});
+  .then(function(d){clearTimeout(timer);realLoaded=true;realErr="";realEvents=dedupeEv(d.ev||[]);realAcc=d.cuentas||null;isAdmin=true;drawData();loadMins();loadUsers();if(PTAB==="locales")loadHist();},function(e){clearTimeout(timer);realErr=e==="auth"?"auth":"err";drawData();if(e==="auth")showPanelLogin("La contraseña ya no es válida.");});
 }
 /* Chequeo diario de compra mínima de cada web mayorista (panel). */
 function loadMins(){fetch(API+"/admin/mins",{headers:{"Authorization":"Bearer "+encodeURIComponent(PASS)},cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(d){if(d)drawMins(d);}).catch(function(){});}
