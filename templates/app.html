@@ -351,7 +351,7 @@ a{color:inherit}
 .br .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .dgrid>*,.kpis>*{min-width:0}
 .br .n b{font-weight:800;margin-right:5px}
-.br .t{height:8px;background:var(--bg);border-radius:4px;position:relative}
+.br .t{height:8px;background:var(--bg);border-radius:4px;position:relative;overflow:hidden}
 .br .f{position:absolute;left:0;top:0;bottom:0;background:var(--ink);border-radius:0 4px 4px 0;min-width:2px}
 .br.warn .f{background:var(--red)}
 .br .c{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -1025,7 +1025,7 @@ function loadUsers(){authGet("/admin/users?format=json").then(function(d){realUs
 function loadHist(){HIST={};authGet("/admin/hist").then(function(d){HIST=d||{};drawData();}).catch(function(){HIST={};});}
 function tallyMulti(list,fn){var m={};list.forEach(function(e){String(fn(e)||"").split("+").forEach(function(k){if(k)m[k]=(m[k]||0)+1;});});return Object.keys(m).map(function(k){return [k,m[k]];}).sort(function(a,b){return b[1]-a[1];});}
 function tally(list,fn){var m={};list.forEach(function(e){var k=fn(e);if(k!==""&&k!=null)m[k]=(m[k]||0)+1;});return Object.keys(m).map(function(k){return [k,m[k]];}).sort(function(a,b){return b[1]-a[1];});}
-function bars(id,rows,lab,warn,max){var el=$(id);rows=rows.slice(0,max||8);if(!rows.length){el.innerHTML='<p class="emptyd">Todavía no hay datos.</p>';return;}var top=rows[0][1];
+function bars(id,rows,lab,warn,max){var el=$(id);rows=rows.slice(0,max||8);if(!rows.length){el.innerHTML='<p class="emptyd">Todavía no hay datos.</p>';return;}var top=Math.max.apply(null,rows.map(function(r){return r[1];}).concat([1]));
   el.innerHTML=rows.map(function(r){return '<div class="br'+(warn?" warn":"")+'"><span class="n">'+(lab?lab(r[0]):esc(r[0]))+'</span><span class="t"><span class="f" style="width:'+Math.max(1.5,r[1]/top*100)+'%"></span></span><span class="c">'+r[1]+'</span></div>';}).join("");}
 function artLab(c){if(String(c).charAt(0)==="?")return "“"+esc(c.slice(1))+"” <span style='color:var(--muted)'>(no existe)</span>";var a=ART[c];return a?'<b>'+esc(c)+'</b>'+esc(a.name):esc(c);}
 function comboLab(a,c,z){return artLab(a)+(c?" · "+esc(c.split("+").join(" o ")):"")+(z?" · talle "+esc(z.split("+").join(" o ")):"");}
