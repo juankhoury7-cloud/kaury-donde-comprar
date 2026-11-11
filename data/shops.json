@@ -124,9 +124,10 @@
   "name": "casajonas",
   "origin": "https://www.casajonas.com.ar",
   "listings": [
-   "/search/?q=kaury&page={p}"
+   "sitemap:/sitemap.xml"
   ],
-  "canal": "may"
+  "canal": "may",
+  "codeRe": "/Kaury/KY(\\d{4})\\d{2}(?!\\d)"
  },
  "lenceria-mayorista.com": {
   "name": "lenceria-mayorista",
@@ -156,17 +157,21 @@
   "name": "casapablomayorista",
   "origin": "https://casapablomayorista.com.ar",
   "listings": [
-   "/search/?q=kaury&page={p}"
+   "sitemap:/wp-sitemap-posts-product-1.xml"
   ],
-  "canal": "may"
+  "canal": "may",
+  "codeRe": "/tienda/kaury-art-(\\d{2,4})(?:-\\d+)?/?$"
  },
  "casayonimayorista.com.ar": {
   "name": "casayonimayorista",
   "origin": "https://casayonimayorista.com.ar",
   "listings": [
-   "/search/?q=kaury&page={p}"
+   "/marca/kaury/page/{p}/",
+   "/marca/kaury-summer/page/{p}/"
   ],
-  "canal": "may"
+  "canal": "may",
+  "linkRe": "^/product/",
+  "pageCodeRe": "C[oó]digo:?\\s*KAU-?(\\d{2,4})(?![\\d])"
  },
  "cathalenceria.com.ar": {
   "name": "cathalenceria",
@@ -250,11 +255,12 @@
  },
  "labombachita.com.ar": {
   "name": "labombachita",
-  "origin": "https://www.labombachita.com.ar",
+  "origin": "https://labombachita.com.ar",
   "listings": [
-   "/page/{p}/?s=kaury&post_type=product"
+   "sitemap:/sitemap.xml"
   ],
-  "canal": "may"
+  "canal": "may",
+  "codeRe": "/productos/art-187-(\\d{2,4})-kaury"
  },
  "tienda.bibianalenceria.com": {
   "name": "tienda",
@@ -349,9 +355,10 @@
   "name": "michilenceria",
   "origin": "https://www.michilenceria.com.ar",
   "listings": [
-   "/search/?q=kaury&page={p}"
+   "sitemap:/product-sitemap.xml"
   ],
-  "canal": "may"
+  "canal": "may",
+  "codeRe": "/productos/kaury-m?(\\d{2,4})-"
  },
  "lenceriamytio.com.ar": {
   "name": "lenceriamytio",
@@ -399,9 +406,14 @@
   "name": "casadieguito",
   "origin": "https://casadieguito.com.ar",
   "listings": [
-   "/search/?q=kaury&page={p}"
+   "/marcas/kaury/",
+   "/categoria-producto/conjuntos/kaury-conjuntos/",
+   "/categoria-producto/bodys/kaury/",
+   "/categoria-producto/bombachas/kaury-bombachas/",
+   "/?s=kaury&post_type=product"
   ],
-  "canal": "may"
+  "canal": "may",
+  "pairRe": "href=\"(https://casadieguito\\.com\\.ar/producto/[^\"]+)\"[^>]*>(?:(?!</a>)[\\s\\S]){0,900}?SKU:?\\s*(\\d{2,4})\\s*KA[UI]\\b"
  },
  "lenceriaraffi.com.ar": {
   "name": "lenceriaraffi",

@@ -52,7 +52,12 @@ await pool(Object.entries(shops), 13, async ([key, shop]) => {
     return;
   }
   let prods = pProds;
-  if (relist) {
+  // las tiendas donde hay que abrir cada producto para ver el número se relistan una vez por día
+  const pst = (prev.status || {})[key] || {};
+  const slow = shop.pageCodeRe && Object.keys(pProds).length && pst.listTs && now - pst.listTs < 23.5 * 3600e3 && process.env.FULL !== '1';
+  if (slow) status.listTs = pst.listTs;
+  if (relist && !slow) {
+    if (shop.pageCodeRe) status.listTs = now;
     const L = await listProducts(shop, CAT);
     const n = Object.keys(L.prods).length, pn = Object.keys(pProds).length;
     if (L.err && !Object.keys(pProds).length) { status.ok = false; status.err = 'listado: ' + L.err; }

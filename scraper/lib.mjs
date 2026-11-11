@@ -54,7 +54,21 @@ export async function listProducts(shop, CAT) {
   //   listing "sitemap:/sitemap.xml": toma los links del índice para Google (webs armadas con JavaScript)
   const okHost = h => [host, ...(shop.hosts || [])].some(x => core(x) === core(h));
   const cre = shop.codeRe ? new RegExp(shop.codeRe, 'i') : null;
-  const add = (c, url) => { const k = c + '|' + url; cnt[k] = (cnt[k] || 0) + 1; if (!prod[c] || cnt[k] > cnt[c + '|' + prod[c]]) prod[c] = url; };
+  const add = (c, url) => { c = String(c).replace(/^0+(?=\d{2})/, ''); const k = c + '|' + url; cnt[k] = (cnt[k] || 0) + 1; if (!prod[c] || cnt[k] > cnt[c + '|' + prod[c]]) prod[c] = url; };
+  //   pageCodeRe + linkRe: el número solo figura dentro de cada producto ("Código KAU8248"): se juntan los links de los
+  //   listados y se abre cada producto una vez (run.mjs lo hace una vez por día y reutiliza el resultado)
+  if (shop.pageCodeRe) {
+    const lre = new RegExp(shop.linkRe || '/product', 'i'), pre = new RegExp(shop.pageCodeRe, 'i'), links = new Set();
+    for (const T of shop.listings) for (let p = 1; p < 16; p++) {
+      const u = O + T.replace('{p}', p), r = await get(u);
+      if (!r.html) { if (p === 1 && !firstErr) firstErr = r.status || r.err; break; }
+      pagesOk++; const n = links.size;
+      for (const a of parse(r.html).querySelectorAll('a[href]')) { let abs; try { abs = new URL(a.getAttribute('href'), u); } catch { continue; } if (okHost(abs.host) && lre.test(abs.pathname)) links.add(abs.origin + abs.pathname); }
+      if (links.size === n || !T.includes('{p}')) break;
+    }
+    await pool([...links], 2, async url => { await sleep(250 + Math.random() * 300); const r = await get(url); if (!r.html) return; const m = parse(r.html).text.match(pre); if (m && CAT.has(String(m[1]).replace(/^0+(?=\d{2})/, ''))) add(m[1], url); });
+    return { prods: Object.fromEntries(Object.entries(prod).filter(([k]) => CAT.has(k))), pagesOk, err: pagesOk ? null : (firstErr || 'sin respuesta') };
+  }
   for (const T of shop.listings) {
     if (T.startsWith('sitemap:')) {
       const urls = [], todo = [O + T.slice(8)], seen = new Set();
@@ -68,7 +82,8 @@ export async function listProducts(shop, CAT) {
         let abs; try { abs = new URL(url); } catch { continue; }
         if (!okHost(abs.host) || /avril|marcela|kaury-?men|kaury-int/i.test(abs.pathname)) continue;
         const m = cre ? (abs.pathname + abs.search).match(cre) : abs.pathname.match(/(?:kaury|art|ka)-?p?-?(\d{3,4})(?=[-\/k]|$)|(?<![\d])(\d{3,4})-kaury\b/i);
-        if (m) add(m[1] || m[2], abs.origin + abs.pathname + (cre && /\?/.test(shop.codeRe) ? abs.search : ''));
+        const base = core(abs.host) === core(host) ? O.replace(/\/$/, '') : abs.origin;
+        if (m) add(m[1] || m[2], base + abs.pathname + (cre && /\?/.test(shop.codeRe) ? abs.search : ''));
       }
       continue;
     }
