@@ -4,6 +4,7 @@ import { db, json, bearer, same, secret } from '../../lib/db.js';
 import { allow, ipOf, tooMany } from '../../lib/guard.js';
 import { invalidate } from './stock.js';
 import { runAlerts } from '../../lib/notify.js';
+import { saveHist } from '../../lib/hist.js';
 export async function onRequestPost({ request, env, waitUntil }) {
   if (!allow('in:' + ipOf(request), 6, 60e3)) return tooMany();
   if (!same(bearer(request), secret(env.INGEST_TOKEN))) return json({ error: 'no autorizado' }, 401);
@@ -19,6 +20,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
   // limpieza: los eventos de más de 13 meses y los contadores diarios viejos se borran
   if (new Date().getUTCMinutes() < 5) await DB.batch([DB.prepare('DELETE FROM ev WHERE ts < ?1').bind(Date.now() - 400 * 864e5), DB.prepare("DELETE FROM kv WHERE k LIKE 'evn:%' AND at < ?1").bind(Date.now() - 7 * 864e5)]);
   invalidate();
+  try { await saveHist(DB, d); } catch (e) { console.log('historial', e && e.message); }
   // avisos de stock: se revisan en segundo plano para no demorar la respuesta
   const site = new URL(request.url).origin.replace(/^http:\/\/(?!127|localhost)/, 'https://');
   const job = runAlerts(DB, env, d, site).then(r => console.log('avisos', JSON.stringify(r)), e => console.log('avisos error', e && e.message));

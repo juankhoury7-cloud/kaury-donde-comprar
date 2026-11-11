@@ -10,6 +10,10 @@ export async function onRequestGet({ request, env }) {
   const { results: us } = await DB.prepare('SELECT id,email,name,tipo,news,prov,created,seen FROM users ORDER BY created DESC').all();
   const { results: al } = await DB.prepare('SELECT uid,a,c,z,p,active,sent FROM alerts ORDER BY created DESC').all();
   const by = {}; for (const x of al) (by[x.uid] = by[x.uid] || []).push(x);
+  if (new URL(request.url).searchParams.get('format') === 'json') {
+    const list = us.map(u => { const a = by[u.id] || []; return { mail: u.email, nombre: u.name, tipo: u.tipo || '', news: !!u.news, zona: u.prov || '', alta: u.created, visto: u.seen, activos: a.filter(x => x.active).length, cumplidos: a.filter(x => x.sent).length, pidio: a.map(describe) }; });
+    return new Response(JSON.stringify({ users: list }), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
+  }
   const head = ['Mail', 'Nombre', 'Tipo', 'Acepta novedades', 'Zona', 'Registrado', 'Última visita', 'Avisos activos', 'Avisos cumplidos', 'Lo que pidió'];
   const rows = us.map(u => { const a = by[u.id] || []; return [u.email, u.name, u.tipo === 'rev' ? 'Revendedora' : u.tipo === 'min' ? 'Consumidora' : '', u.news ? 'Sí' : 'No', u.prov || '', fecha(u.created), fecha(u.seen), a.filter(x => x.active).length, a.filter(x => x.sent).length, a.map(describe).join(' | ')]; });
   const body = '﻿' + [head, ...rows].map(r => r.map(csv).join(';')).join('\r\n');

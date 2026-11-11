@@ -6,6 +6,8 @@ import { allow, ipOf, sameOrigin, tooMany } from '../../lib/guard.js';
 const S = (x, n = 60) => (x == null ? '' : String(x)).slice(0, n);
 const I = x => (Number.isFinite(+x) ? Math.trunc(+x) : null);
 const day = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10); // día en hora argentina
+// de dónde llegó la visita (se guarda solo la categoría, nunca la dirección completa)
+const SRC = ['instagram', 'facebook', 'google', 'whatsapp', 'tiktok', 'kaury', 'directo', 'otro'];
 export async function onRequestPost({ request, env }) {
   if (!sameOrigin(request)) return json({ error: 'origen no permitido' }, 403);
   const ip = ipOf(request);
@@ -19,8 +21,8 @@ export async function onRequestPost({ request, env }) {
   const c = await DB.prepare("INSERT INTO kv (k,v,at) VALUES (?1,?2,?3) ON CONFLICT(k) DO UPDATE SET v=CAST(v AS INTEGER)+?2, at=?3 RETURNING v")
     .bind('evn:' + day(), String(rows.length), now).first();
   if (c && +c.v > cap) return json({ ok: false, error: 'tope diario alcanzado' }, 429);
-  const st = DB.prepare('INSERT INTO ev (ts,sid,t,a,c,z,p,r,st,k,m) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)');
+  const st = DB.prepare('INSERT INTO ev (ts,sid,t,a,c,z,p,r,st,k,m,o) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)');
   await DB.batch(rows.map(e => { let ts = I(e.ts); if (!ts || Math.abs(ts - now) > 864e5) ts = now;
-    return st.bind(ts, sid, e.t, S(e.a, 24), S(e.c, 120), S(e.z, 60), S(e.p, 40), I(e.r), I(e.st), S(e.k, 8), ['may', 'all'].includes(e.m) ? e.m : 'min'); }));
+    return st.bind(ts, sid, e.t, S(e.a, 24), S(e.c, 120), S(e.z, 60), S(e.p, 40), I(e.r), I(e.st), S(e.k, 8), ['may', 'all'].includes(e.m) ? e.m : 'min', SRC.includes(e.o) ? e.o : null); }));
   return json({ ok: true, n: rows.length });
 }

@@ -41,3 +41,9 @@ assert.equal(matches(snap, { a: '8100', c: 'Fresa', z: '95', p: 'CABA' }).length
   console.log('aviso por unidad y por mayor juntos: 4030 →', mi, '+', ma, '=', a, 'tiendas'); }
 console.log('avisos:', describe({ a: '8100', c: 'Fresa+Negro', z: '95', p: 'Salta' }), '→ OK');
 await rm(tmp, { recursive: true });
+{ // historial de stock: cuenta tiendas con cada artículo
+  const { counts } = await import('../lib/hist.js');
+  const c = counts({ prods: { 'www.a.com': { '4030': 'u', '8199': 'u' }, 'b.com': { '4030': 'u' } }, stock: { 'a.com': { '4030': { Negro: ['90'] }, '8199': {} }, 'b.com': { '4030': '?' } } });
+  assert.deepEqual(c, { '4030': 2 });
+  console.log('historial de stock OK');
+}
