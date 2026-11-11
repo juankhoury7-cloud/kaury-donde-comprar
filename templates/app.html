@@ -328,7 +328,7 @@ a{color:inherit}
 .hk.bad{border-color:#f2b8c3}.hk.bad .v{color:var(--red)}
 .cols.runs{height:70px;gap:1px}
 .cols.runs div{background:#1d6b3d!important;border-radius:2px 2px 0 0}
-.cols.runs div.w{background:#d39b00!important}.cols.runs div.gap{background:var(--red)!important;opacity:.85}.cols.runs div.e{background:transparent!important;border-bottom:2px solid var(--line)}
+.cols.runs div.w{background:#d39b00!important}.cols.runs div.gap{background:var(--red)!important;opacity:.85}.cols.runs div.e{background:var(--line)!important;height:8%;border-radius:2px 2px 0 0}
 .hl{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
 .hl span:last-child{text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums}
 .dash{flex:1 1 auto;overflow-y:auto;background:var(--bg)}
@@ -1162,8 +1162,8 @@ function drawHealth(){
   /* barras de las corridas de las últimas 24 h, en franjas de 15 minutos */
   var slots=[],t0=now-864e5;for(var k=0;k<96;k++)slots.push([]);r24.forEach(function(r){var j=Math.min(95,Math.floor((r.at-t0)/(15*60000)));slots[j].push(r);});
   var md=Math.max.apply(null,r24.map(function(r){return r.dur||0;}).concat([60]));
-  $("hRuns").innerHTML=slots.map(function(sl,j){var st=new Date(t0+j*15*60000).toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"});if(!sl.length)return '<div class="'+(j<95?"gap":"e")+'" title="'+st+': sin corridas" style="height:100%"></div>';var d=Math.max.apply(null,sl.map(function(r){return r.dur||0;})),w=sl.some(function(r){return r.n&&r.ok/r.n<0.85;});return '<div class="'+(w?"w":"")+'" title="'+st+': '+sl.length+' corrida(s), hasta '+d+' s" style="height:'+Math.max(12,d/md*100)+'%"></div>';}).join("");
-  $("hRunsX").innerHTML="<span>hace 24 h</span><span>verde = bien · amarillo = varias tiendas sin leer · rojo = no corrió</span><span>ahora</span>";
+  $("hRuns").innerHTML=slots.map(function(sl,j){var st=new Date(t0+j*15*60000).toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"});var first=runs.length?runs[0].at:now,slotEnd=t0+(j+1)*15*60000;if(!sl.length)return slotEnd<=first||j===95?'<div class="e" title="'+st+': sin registro (antes de empezar a guardar las corridas)"></div>':'<div class="gap" title="'+st+': no corrió" style="height:100%"></div>';var d=Math.max.apply(null,sl.map(function(r){return r.dur||0;})),w=sl.some(function(r){return r.n&&r.ok/r.n<0.85;});return '<div class="'+(w?"w":"")+'" title="'+st+': '+sl.length+' corrida(s), hasta '+d+' s" style="height:'+Math.max(12,d/md*100)+'%"></div>';}).join("");
+  $("hRunsX").innerHTML="<span>hace 24 h</span><span>verde = bien · amarillo = varias tiendas sin leer · rojo = no corrió · gris = sin registro</span><span>ahora</span>";
   $("hRunD").textContent=runs.length?"Última corrida "+mins(now-last.at)+" · duró "+(last.dur||"?")+" s · "+r24.length+" corridas en 24 h (lo esperado: 288)":"Todavía no hay corridas registradas: se empiezan a guardar desde ahora.";
   $("hRunBody").innerHTML=runs.slice(-20).reverse().map(function(r){var d=new Date(r.at);return '<tr><td>'+d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})+'</td><td>'+(r.mins?"Completa + compra mínima":r.full?"Completa (con mayoristas)":"Rápida (por unidad)")+'</td><td class="num">'+(r.dur!=null?r.dur+" s":"–")+'</td><td class="num">'+r.ok+" / "+r.n+'</td><td class="num">'+(r.warn||0)+'</td><td class="num">'+r.kb+' KB</td></tr>';}).join("")||'<tr><td colspan="6" class="emptyd">Todavía no hay corridas registradas.</td></tr>';
   var D=H.db,mc=H.mins.counts||{},hl=function(a,b){return '<div class="hl"><span>'+a+'</span><span>'+b+'</span></div>';};
