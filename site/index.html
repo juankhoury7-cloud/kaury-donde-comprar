@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-jkaY/EWq4H0rDnmzxtiaEnrh54dG+Flg35xXOjTcAXc=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-RssQ2IK9ha9u6opVHtLoRp6/ZVSamkCs8A9pUp+6k98=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
 <title>Kaury · Dónde comprar · Por unidad y por mayor</title>
@@ -323,6 +323,15 @@ a{color:inherit}
 .hrow{display:grid;grid-template-columns:minmax(0,1fr) 120px 44px 52px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
 .hrow .num{text-align:right;font-variant-numeric:tabular-nums}
 @media (max-width:560px){.hrow{grid-template-columns:minmax(0,1fr) 84px 34px 46px}.dtop h1{font-size:24px}}
+.hk .v{font-size:22px!important;line-height:1.2;margin:8px 0 4px!important}
+.hk.ok{border-color:#bfe3cc}.hk.ok .v{color:#1d6b3d}
+.hk.warn{border-color:#f0d9a0}.hk.warn .v{color:#7a5a00}
+.hk.bad{border-color:#f2b8c3}.hk.bad .v{color:var(--red)}
+.cols.runs{height:70px;gap:1px}
+.cols.runs div{background:#1d6b3d!important;border-radius:2px 2px 0 0}
+.cols.runs div.w{background:#d39b00!important}.cols.runs div.gap{background:var(--red)!important;opacity:.85}.cols.runs div.e{background:transparent!important;border-bottom:2px solid var(--line)}
+.hl{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.hl span:last-child{text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums}
 .dash{flex:1 1 auto;overflow-y:auto;background:var(--bg)}
 .dash[hidden]{display:none}
 .dwrap{max-width:1160px;margin:0 auto;padding:26px 16px 60px}
@@ -421,7 +430,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
       <div class="dctl"><div class="seg" role="group" aria-label="Período" id="pDays"><button type="button" data-d="7" aria-pressed="false">7 días</button><button type="button" data-d="30" aria-pressed="true">30 días</button><button type="button" data-d="90" aria-pressed="false">90 días</button></div>
         <div class="seg" role="group" aria-label="Origen de los datos"><button type="button" id="srcReal" aria-pressed="false">Datos reales</button><button type="button" id="srcDemo" aria-pressed="true">Ejemplo</button></div></div>
     </div>
-    <nav class="ptabs" id="ptabs" role="tablist"><button type="button" role="tab" data-pt="resumen" aria-selected="true">Resumen</button><button type="button" role="tab" data-pt="demanda" aria-selected="false">Demanda</button><button type="button" role="tab" data-pt="locales" aria-selected="false">Locales</button><button type="button" role="tab" data-pt="contactos" aria-selected="false">Contactos</button></nav>
+    <nav class="ptabs" id="ptabs" role="tablist"><button type="button" role="tab" data-pt="resumen" aria-selected="true">Resumen</button><button type="button" role="tab" data-pt="demanda" aria-selected="false">Demanda</button><button type="button" role="tab" data-pt="locales" aria-selected="false">Locales</button><button type="button" role="tab" data-pt="contactos" aria-selected="false">Contactos</button><button type="button" role="tab" data-pt="sistema" aria-selected="false">Sistema</button></nav>
     <p class="dnote" id="dnote"></p>
 
     <section class="ptab" data-pt="resumen">
@@ -457,10 +466,19 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
       <div class="card full"><div class="ch"><div><h2>Visitas que le mandaste a cada cliente</h2><p class="d" id="repD">Clics desde el mapa hacia su tienda, Instagram o Cómo llegar</p></div><select id="repMonth" aria-label="Mes"></select></div><div class="tbl tall"><table><thead><tr><th>Local</th><th>Ciudad</th><th class="num">Tienda</th><th class="num">Instagram</th><th class="num">Cómo llegar</th><th class="num">Total</th></tr></thead><tbody id="repBody"></tbody></table></div>
         <button type="button" class="dbtn" id="repCsv">Descargar reporte del mes (Excel/CSV)</button></div>
       <div class="card full"><h2>Stock en la calle</h2><p class="d" id="histD">Cuántas tiendas online tienen cada artículo, día a día</p><div id="hist"></div></div>
-      <div class="card full"><h2>Estado de lectura de las tiendas</h2><p class="d" id="readD">Cada cuánto y qué tan bien se lee cada tienda online</p><div class="tbl tall"><table><thead><tr><th>Tienda</th><th>Tipo</th><th class="num">Artículos</th><th class="num">Con stock</th><th>Estado</th></tr></thead><tbody id="readBody"></tbody></table></div></div>
       <div class="card full" id="minCard" hidden><h2>Mayoristas: compra mínima y precios</h2><p class="d" id="mnSum">Chequeo diario de la web de cada mayorista</p><div id="mnList"></div></div>
     </section>
 
+    <section class="ptab" data-pt="sistema" hidden>
+      <div class="kpis" id="hKpis"></div>
+      <div class="card full"><div class="ch"><div><h2>Corridas del robot</h2><p class="d" id="hRunD">Cada 5 minutos lee el stock de las tiendas por unidad; cada hora, también las mayoristas</p></div><button type="button" class="dbtn" id="hReload" style="margin:0">Actualizar</button></div><div class="cols runs" id="hRuns"></div><div class="colx" id="hRunsX"></div>
+        <div class="tbl" style="margin-top:12px"><table><thead><tr><th>Hora</th><th>Tipo</th><th class="num">Duración</th><th class="num">Tiendas OK</th><th class="num">Para revisar</th><th class="num">Datos</th></tr></thead><tbody id="hRunBody"></tbody></table></div></div>
+      <div class="card full"><h2>Estado de lectura de las tiendas</h2><p class="d" id="readD">Cada cuánto y qué tan bien se lee cada tienda online</p><div class="tbl tall"><table><thead><tr><th>Tienda</th><th>Tipo</th><th class="num">Artículos</th><th class="num">Con stock</th><th>Estado</th></tr></thead><tbody id="readBody"></tbody></table></div></div>
+      <div class="dgrid">
+        <div class="card"><h2>Base de datos</h2><p class="d">Lo que hay guardado</p><div id="hDb"></div></div>
+        <div class="card"><h2>Configuración</h2><p class="d">Claves y servicios cargados (no se muestran las claves)</p><div id="hCfg"></div></div>
+      </div>
+    </section>
     <section class="ptab" data-pt="contactos" hidden>
       <div class="card full" id="accCard"><h2>Contactos registrados</h2><p class="d">Personas que entraron con Google para recibir avisos de stock</p>
         <div class="kpis" style="margin:10px 0 6px"><div class="kpi"><div class="k">Cuentas</div><div class="v" id="aT">0</div><div class="s" id="aT2"></div></div><div class="kpi"><div class="k">Para uso propio</div><div class="v" id="aM">0</div></div><div class="kpi"><div class="k">Revendedoras</div><div class="v" id="aR">0</div></div><div class="kpi"><div class="k">Aceptan novedades</div><div class="v" id="aN">0</div></div></div>
@@ -1071,7 +1089,8 @@ function drawData(){
     var rows=D.slice().sort(function(a,b){return b.ts-a.ts;}).slice(0,80);
     $("tbody").innerHTML=rows.length?rows.map(function(e){var d=new Date(e.ts);return "<tr><td>"+d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})+"</td><td>"+(e.t==="sh"?"Compartió el link":e.t==="s"?"Búsqueda":"Fue a "+(e.k==="web"?"la tienda":e.k==="ig"?"su Instagram":"Cómo llegar"))+"</td><td>"+(e.a?esc(e.a.charAt(0)==="?"?"“"+e.a.slice(1)+"”":e.a):"—")+"</td><td>"+esc(e.c||"—")+"</td><td>"+(e.t==="c"&&STORES[e.st]?esc(STORES[e.st].name):esc(e.p||"Todo el país"))+"</td><td>"+esc(e.o?SRCN[e.o]||e.o:"—")+'</td><td class="num">'+(e.t==="s"?e.r:"")+"</td></tr>";}).join(""):'<tr><td colspan="7" class="emptyd">Todavía no hay datos.</td></tr>';
   }
-  if(PTAB==="locales"){drawReport(all);drawHist();drawRead();}
+  if(PTAB==="locales"){drawReport(all);drawHist();}
+  if(PTAB==="sistema")drawHealth();
   if(PTAB==="contactos")drawUsers();
 }
 /* Oportunidades: combinación artículo + color + talle muy buscada que casi ninguna tienda tiene hoy */
@@ -1122,6 +1141,37 @@ function drawRead(){var el=$("readBody");if(!STATUS){el.innerHTML='<tr><td colsp
     .sort(function(a,b){return (b.bad-a.bad)||(b.w-a.w)||((b.x.arts||0)-(a.x.arts||0));});
   var nb=rows.filter(function(r){return r.bad;}).length;$("readD").textContent=(rows.length-nb)+" de "+rows.length+" tiendas se leen bien · las por unidad cada 5 minutos, las mayoristas cada hora";
   el.innerHTML=rows.map(function(r){return '<tr><td><b>'+esc(r.k.replace(/^www\./,""))+'</b></td><td>'+r.t+'</td><td class="num">'+(r.x.arts||0)+'</td><td class="num">'+(r.x.conStock||0)+'</td><td>'+(r.bad?'<span class="pill">No se lee</span> <span style="color:var(--muted)">'+esc(r.x.err||"sin artículos")+'</span>':r.w?'<span class="pill warn">Revisar</span> <span style="color:var(--muted)">'+esc(r.x.warn)+'</span>':'<span class="pill ok">OK</span>')+'</td></tr>';}).join("");}
+/* ---------- Sistema: estado técnico ---------- */
+var HEALTH=null,healthAt=0;
+function loadHealth(){authGet("/admin/health").then(function(d){HEALTH=d;healthAt=Date.now();drawData();}).catch(function(){HEALTH={err:1};drawData();});}
+$("hReload").addEventListener("click",function(){HEALTH=null;loadHealth();pullStock();drawData();});
+function mins(ms){var m=Math.round(ms/60000);return m<1?"recién":m<60?"hace "+m+" min":m<1440?"hace "+Math.floor(m/60)+" h "+(m%60?m%60+" min":""):"hace "+Math.round(m/1440)+" días";}
+function hk(t,v,sub,cls){return '<div class="card kpi hk '+cls+'"><div class="k">'+t+'</div><div class="v">'+v+'</div><div class="s">'+sub+'</div></div>';}
+function drawHealth(){
+  if(!srcReal){$("hKpis").innerHTML='<p class="emptyd" style="grid-column:1/-1">El estado técnico se ve con “Datos reales”.</p>';$("hRuns").innerHTML="";$("hRunBody").innerHTML="";$("hDb").innerHTML="";$("hCfg").innerHTML="";drawRead();return;}
+  if(!HEALTH||Date.now()-healthAt>120000){if(!HEALTH)$("hKpis").innerHTML='<p class="emptyd" style="grid-column:1/-1">Cargando…</p>';if(!HEALTH||!HEALTH.err)loadHealth();if(!HEALTH)return;}
+  if(HEALTH.err){$("hKpis").innerHTML='<p class="emptyd" style="grid-column:1/-1">No se pudo leer el estado.</p>';return;}
+  var H=HEALTH,now=Date.now(),runs=H.runs||[],last=runs[runs.length-1],age=H.stockAt?now-H.stockAt:1e12;
+  var r24=runs.filter(function(r){return r.at>=now-864e5;}),gaps=0;for(var i=1;i<r24.length;i++)if(r24[i].at-r24[i-1].at>15*60000)gaps++;
+  var okSt=last?last.ok:0,nSt=last?last.n:0,mailOk=H.config.brevo&&H.config.mailFrom;
+  var dl=H.config.ghTokenExpires?Math.round((new Date(H.config.ghTokenExpires+"T12:00:00-03:00")-now)/864e5):null;
+  $("hKpis").innerHTML=
+    hk("Stock",age<15*60000?"Al día":age<60*60000?"Atrasado":"Detenido","Última actualización "+mins(age),age<15*60000?"ok":age<60*60000?"warn":"bad")+
+    hk("Robot",r24.length+" corridas",(gaps?gaps+" hueco"+(gaps>1?"s":"")+" de más de 15 min en 24 h":"Sin cortes en las últimas 24 h"),r24.length>=200&&!gaps?"ok":r24.length>=100?"warn":"bad")+
+    hk("Tiendas",okSt+" de "+nSt,(nSt-okSt)+" no se leen · "+(last&&last.warn||0)+" para revisar",nSt&&okSt/nSt>=0.9?"ok":okSt/nSt>=0.75?"warn":"bad")+
+    hk("Avisos por mail",mailOk?"Activos":"Sin configurar",mailOk?(H.alerts.sent+" enviados en total"):"Falta cargar Brevo · "+H.alerts.active+" avisos esperando",mailOk?"ok":"warn");
+  /* barras de las corridas de las últimas 24 h, en franjas de 15 minutos */
+  var slots=[],t0=now-864e5;for(var k=0;k<96;k++)slots.push([]);r24.forEach(function(r){var j=Math.min(95,Math.floor((r.at-t0)/(15*60000)));slots[j].push(r);});
+  var md=Math.max.apply(null,r24.map(function(r){return r.dur||0;}).concat([60]));
+  $("hRuns").innerHTML=slots.map(function(sl,j){var st=new Date(t0+j*15*60000).toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"});if(!sl.length)return '<div class="'+(j<95?"gap":"e")+'" title="'+st+': sin corridas" style="height:100%"></div>';var d=Math.max.apply(null,sl.map(function(r){return r.dur||0;})),w=sl.some(function(r){return r.n&&r.ok/r.n<0.85;});return '<div class="'+(w?"w":"")+'" title="'+st+': '+sl.length+' corrida(s), hasta '+d+' s" style="height:'+Math.max(12,d/md*100)+'%"></div>';}).join("");
+  $("hRunsX").innerHTML="<span>hace 24 h</span><span>verde = bien · amarillo = varias tiendas sin leer · rojo = no corrió</span><span>ahora</span>";
+  $("hRunD").textContent=runs.length?"Última corrida "+mins(now-last.at)+" · duró "+(last.dur||"?")+" s · "+r24.length+" corridas en 24 h (lo esperado: 288)":"Todavía no hay corridas registradas: se empiezan a guardar desde ahora.";
+  $("hRunBody").innerHTML=runs.slice(-20).reverse().map(function(r){var d=new Date(r.at);return '<tr><td>'+d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})+'</td><td>'+(r.mins?"Completa + compra mínima":r.full?"Completa (con mayoristas)":"Rápida (por unidad)")+'</td><td class="num">'+(r.dur!=null?r.dur+" s":"–")+'</td><td class="num">'+r.ok+" / "+r.n+'</td><td class="num">'+(r.warn||0)+'</td><td class="num">'+r.kb+' KB</td></tr>';}).join("")||'<tr><td colspan="6" class="emptyd">Todavía no hay corridas registradas.</td></tr>';
+  var D=H.db,mc=H.mins.counts||{},hl=function(a,b){return '<div class="hl"><span>'+a+'</span><span>'+b+'</span></div>';};
+  $("hDb").innerHTML=hl("Movimientos guardados",num(D.ev))+hl("Movimientos últimas 24 h",num(D.ev24))+hl("Hoy / tope diario",num(D.evToday)+" / "+num(D.evCap)+(D.evToday>D.evCap*0.8?' <span class="pill warn">cerca del tope</span>':""))+hl("Contactos registrados",num(D.users))+hl("Sesiones abiertas",num(D.sessions))+hl("Avisos esperando stock",num(H.alerts.active))+hl("Historial de stock",H.histDays+" día"+(H.histDays===1?"":"s"))+hl("Chequeo de compra mínima",H.mins.ts?mins(now-H.mins.ts)+" · "+(mc.ok||0)+" iguales, "+(mc.cambio||0)+" cambios, "+((mc.dudoso||0)+(mc.no||0)+(mc.error||0))+" a revisar":"todavía no corrió");
+  var ck=function(ok,a,b){return '<div class="hl"><span>'+(ok?'<span class="pill ok">✓</span> ':'<span class="pill">✗</span> ')+a+'</span><span>'+b+'</span></div>';},C=H.config;
+  $("hCfg").innerHTML=ck(C.ingest,"Clave del robot de stock",C.ingest?"cargada":"falta")+ck(C.panel,"Contraseña del panel","cargada")+ck(C.google,"Registro con Google",C.google?"activo":"falta el Client ID")+ck(C.brevo&&C.mailFrom,"Mails de avisos (Brevo)",C.brevo&&C.mailFrom?"activo":"falta "+(!C.brevo?"BREVO_KEY":"")+(!C.brevo&&!C.mailFrom?" y ":"")+(!C.mailFrom?"MAIL_FROM":""))+ck(C.contact,"Mail de contacto en Privacidad",C.contact?"cargado":"falta")+ck(dl===null||dl>30,"Token de GitHub del reloj",dl===null?"sin dato":dl>0?"vence en "+dl+" días ("+new Date(C.ghTokenExpires+"T12:00:00-03:00").toLocaleDateString("es-AR")+")":"vencido")+(H.alerts.last&&H.alerts.last.skipped?'<p class="d" style="margin:8px 0 0">Último intento de avisos: '+esc(H.alerts.last.skipped)+'</p>':"");
+  drawRead();}
 /* Contactos */
 var uFilt={q:"",tipo:"",zona:"",news:false};
 ["uQ","uTipo","uZona","uNews"].forEach(function(id){$(id).addEventListener(id==="uQ"?"input":"change",function(){uFilt={q:$("uQ").value.trim().toLowerCase(),tipo:$("uTipo").value,zona:$("uZona").value,news:$("uNews").checked};drawUsers();});});

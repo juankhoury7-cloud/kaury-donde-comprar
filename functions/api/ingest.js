@@ -20,10 +20,19 @@ export async function onRequestPost({ request, env, waitUntil }) {
   // limpieza: los eventos de más de 13 meses y los contadores diarios viejos se borran
   if (new Date().getUTCMinutes() < 5) await DB.batch([DB.prepare('DELETE FROM ev WHERE ts < ?1').bind(Date.now() - 400 * 864e5), DB.prepare("DELETE FROM kv WHERE k LIKE 'evn:%' AND at < ?1").bind(Date.now() - 7 * 864e5)]);
   invalidate();
+  // registro de corridas del robot (últimas 400 ≈ 33 horas) para la pestaña Sistema del panel
+  try {
+    const S = Object.values(d.status || {}), run = d.run || {};
+    const rec = { at: Date.now(), ts: d.ts, n: S.length, ok: S.filter(x => x.ok && x.arts).length, warn: S.filter(x => x.warn).length, dur: run.dur || null, full: run.relist ? 1 : 0, mins: run.daily ? 1 : 0, kb: Math.round(v.length / 1024) };
+    const row = await DB.prepare("SELECT v FROM kv WHERE k='runs'").first();
+    let runs = []; try { runs = row ? JSON.parse(row.v) : []; } catch { runs = []; }
+    runs.push(rec); if (runs.length > 400) runs = runs.slice(-400);
+    await DB.prepare("INSERT INTO kv (k,v,at) VALUES ('runs',?1,?2) ON CONFLICT(k) DO UPDATE SET v=excluded.v, at=excluded.at").bind(JSON.stringify(runs), Date.now()).run();
+  } catch (e) { console.log('corridas', e && e.message); }
   try { await saveHist(DB, d); } catch (e) { console.log('historial', e && e.message); }
   // avisos de stock: se revisan en segundo plano para no demorar la respuesta
   const site = new URL(request.url).origin.replace(/^http:\/\/(?!127|localhost)/, 'https://');
-  const job = runAlerts(DB, env, d, site).then(r => console.log('avisos', JSON.stringify(r)), e => console.log('avisos error', e && e.message));
+  const job = runAlerts(DB, env, d, site).then(r => { console.log('avisos', JSON.stringify(r)); return DB.prepare("INSERT INTO kv (k,v,at) VALUES ('alertsrun',?1,?2) ON CONFLICT(k) DO UPDATE SET v=excluded.v, at=excluded.at").bind(JSON.stringify(r || {}), Date.now()).run(); }, e => console.log('avisos error', e && e.message));
   if (waitUntil) waitUntil(job); else await job;
   return json({ ok: true, tiendas: Object.keys(d.stock).length, bytes: v.length });
 }

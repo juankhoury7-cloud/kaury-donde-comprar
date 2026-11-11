@@ -110,6 +110,8 @@ if (daily) {
 out.mo = {};
 for (const [h, o] of Object.entries(mstate.hosts || {})) if ((o.amt !== null && o.amt !== undefined) || o.q) out.mo[h] = { a: o.q ? null : o.amt, t: o.txt, p: o.temp ? 1 : 0 };
 
+// resumen de la corrida para el panel (pestaña Sistema)
+out.run = { dur: Math.round((Date.now() - now) / 1000), relist: !!relist, daily: !!daily };
 const body = JSON.stringify(out);
 if (process.env.OUT) await writeFile(process.env.OUT, body);
 if (okN < Math.ceil(base.length / 2)) { console.log('Menos de la mitad de las tiendas respondió: no subo nada para no borrar datos buenos.'); process.exit(1); }
