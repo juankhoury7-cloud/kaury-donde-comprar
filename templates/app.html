@@ -313,6 +313,7 @@ a{color:inherit}
 .opp .h{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-bottom:4px;border-bottom:1px solid var(--line)}
 .opp .r{padding:8px 0;border-bottom:1px solid var(--line)}
 .opp .num{text-align:right;font-variant-numeric:tabular-nums}
+.opp b,.hrow b{margin-right:6px}
 .pill{display:inline-block;font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;background:var(--red-soft);color:var(--red-d)}
 .pill.ok{background:#e9f6ee;color:#1d6b3d}.pill.warn{background:#fff4d6;color:#7a5a00}
 .cols.hrs{height:110px}
@@ -1074,7 +1075,9 @@ function drawData(){
 }
 /* Oportunidades: combinación artículo + color + talle muy buscada que casi ninguna tienda tiene hoy */
 function drawOpp(S){var m={};S.forEach(function(e){if(!e.a||e.a.charAt(0)==="?"||!ART[e.a])return;var cs=e.c?e.c.split("+"):[""],zs=e.z?e.z.split("+"):[""];cs.forEach(function(c){zs.forEach(function(z){var k=e.a+"|"+c+"|"+z;m[k]=(m[k]||0)+1;});});});
-  var rows=Object.keys(m).map(function(k){var p=k.split("|"),stock=stockFor(p[0]),cs=p[1]?[p[1]]:[],zs=p[2]?[p[2]]:[];var nl=STORES.filter(function(s){return s.on&&matchEnt(stock[s.id],cs,zs);}).length;return {a:p[0],c:p[1],z:p[2],n:m[k],l:nl,sc:m[k]/(1+nl*nl)};})
+  var rows=Object.keys(m).map(function(k){var p=k.split("|"),stock=stockFor(p[0]),pack=ART[p[0]].colors.every(function(c){return /^pack/i.test(c.n);}),cs=p[1]&&!pack?[p[1]]:[],zs=p[2]?[p[2]]:[];
+    /* para no dar falsas alarmas: cuenta también las tiendas que lo publican sin detallar color y talle, y en los packs no exige saber cuál */
+    var nl=STORES.filter(function(s){var e=stock[s.id];return s.on&&(e==="?"||matchEnt(e,cs,zs));}).length;return {a:p[0],c:p[1],z:p[2],n:m[k],l:nl,sc:m[k]/(1+nl*nl)};})
     .filter(function(r){return r.l<=2&&r.n>=2;}).sort(function(a,b){return b.sc-a.sc||b.n-a.n;}).slice(0,10);
   $("opp").innerHTML=rows.length?'<div class="opp"><span class="h">Artículo, color y talle</span><span class="h num">Búsquedas</span><span class="h num">Tiendas hoy</span>'+rows.map(function(r){return '<span class="r">'+comboLab(r.a,r.c,r.z)+'</span><span class="r num">'+r.n+'</span><span class="r num"><span class="pill'+(r.l?" warn":"")+'">'+r.l+'</span></span>';}).join("")+'</div>':'<p class="emptyd">Por ahora todo lo que buscan está en varias tiendas.</p>';}
 function drawDaily(S){var now=new Date(),d0=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime(),step=PDAYS>30?7:1,nb=Math.ceil(PDAYS/step),b=[];
