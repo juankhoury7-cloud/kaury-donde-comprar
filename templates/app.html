@@ -511,7 +511,7 @@ function nameFix(n){n=String(n).replace(/\s+/g," ").trim();if(n!==n.toUpperCase(
 /* STOCK: colores y talles con stock hoy, leídos de la página de cada artículo en la tienda ("?" = la tienda no los muestra). Artículos sin stock no figuran. */
 /* Cada local puede vender por unidad (min), por mayor (may) o las dos cosas (both). r[10]/r[11]: tienda minorista; r[15]/r[16]: tienda mayorista; r[13]/r[14]: compra mínima. */
 
-var STORES=RAW.map(function(r,i){var p=proj(r[8],r[9]),cn=r[12]||"min";return {i:i,id:"s"+i,name:nameFix(r[0]),type:r[1],addr:r[2],city:tc(r[3]),prov:provName(r[4]),ig:r[5],
+var STORES=RAW.map(function(r,i){var p=proj(r[8],r[9]),cn=r[12]||"min";return {i:i,id:"s"+i,name:nameFix(r[0]),type:r[1],online:r[1]==="ONLINE",addr:r[2],city:tc(r[3]),prov:provName(r[4]),ig:r[5],
   rk:r[10]||"",rweb:r[11]||"",wk:r[16]||"",wweb:r[15]||"",canal:cn,minAmt:(r[13]===null||r[13]===undefined)?null:r[13],minTxt:r[14]||"",
   inMin:(cn==="min"||cn==="both")&&!!r[10],inMay:cn==="may"||cn==="both",x:p[0],y:p[1]};});
 STORES.forEach(function(s){s.minAmt0=s.minAmt;s.minTxt0=s.minTxt;});
@@ -848,7 +848,7 @@ function select(id){
   if(shops.length===2&&hostOf(shops[0].u)===hostOf(shops[1].u)){shops[0].m="both";shops.length=1;}
   shops.forEach(function(x){x.s=s;});var shop=shops[0]||null;
   var net=s.ig?(/tiktok/.test(s.ig)?"TikTok":/facebook/.test(s.ig)?"Facebook":"Instagram"):"";
-  openSheet('<h3>'+esc(s.name)+'</h3><div class="ad">'+esc(s.addr)+' · '+esc(s.city)+(s.prov!=="CABA"&&s.prov!==s.city?", "+esc(s.prov):s.prov==="CABA"?", CABA":"")+'</div>'+
+  openSheet('<h3>'+esc(s.name)+'</h3><div class="ad">'+(s.online?'Tienda online, sin local · envíos a todo el país · zona ':esc(s.addr)+' · ')+esc(s.city)+(s.prov!=="CABA"&&s.prov!==s.city?", "+esc(s.prov):s.prov==="CABA"?", CABA":"")+'</div>'+
    '<div class="tags">'+(s.inMin&&s.inMay?'<span class="tg red">Por unidad y por mayor</span>':s.inMin?'<span class="tg red">Minorista · por unidad</span>':'<span class="tg red">Mayorista</span>')+(s.inMay&&!(s.inMin&&s.minAmt===0)?'<span class="tg min">'+esc(minLabel(s))+'</span>':'<span class="tg">Sin compra mínima</span>')+'</div>'+
    (a?'<div class="stock" style="background:#e9f6ee;color:#1f6b3d;margin-top:12px"><b>✓ El '+esc(a.code)+' está publicado en su tienda online.</b><small style="color:#3d7a55">Revisado el '+esc(STOCKAT)+'. El botón te lleva directo a ese artículo'+(shop&&shop.v?' con <b>'+esc(varLabel(shop.v))+'</b> ya elegido':'')+'.</small></div>':'')+
    (stock==="?"?'<div class="stock">Su tienda no muestra el stock por color y talle: miralo en el link.</div>':stock?'<div class="stock">Colores y talles con stock en su tienda online:<div class="grid">'+Object.keys(stock).sort(function(x,y){var sx=st.colors.indexOf(x)>=0?0:1,sy=st.colors.indexOf(y)>=0?0:1;return sx-sy;}).map(function(n){
@@ -857,8 +857,8 @@ function select(id){
    '<div class="acts">'+
    (shops.length?shops.map(shopBtn).join("")
      :'<p style="margin:0;font-size:13px;color:var(--muted)">'+(s.inMin?'Este local no tiene tienda online. Consultá por ':'No vende por mayor online. Consultá stock y condiciones por ')+(s.ig?esc(net):"teléfono")+' o pasá por el local.</p>')+
-   '<div class="two">'+(s.ig?'<a class="btn'+(shop?"":" red")+'" data-act="ig" href="'+esc(s.ig)+'" target="_blank" rel="noopener">'+net+'</a>':'')+
-   '<a class="btn" data-act="maps" href="'+esc(mapsUrl(s))+'" target="_blank" rel="noopener"'+(s.ig?'':' style="grid-column:1/-1"')+'>Cómo llegar</a></div></div>');
+   '<div class="two">'+(s.ig?'<a class="btn'+(shop?"":" red")+'" data-act="ig" href="'+esc(s.ig)+'" target="_blank" rel="noopener"'+(s.online?' style="grid-column:1/-1"':'')+'>'+net+'</a>':'')+
+   (s.online?'':'<a class="btn" data-act="maps" href="'+esc(mapsUrl(s))+'" target="_blank" rel="noopener"'+(s.ig?'':' style="grid-column:1/-1"')+'>Cómo llegar</a>')+'</div></div>');
   Array.prototype.forEach.call(sheet.querySelectorAll("[data-act]"),function(l){l.addEventListener("click",function(){logClick(s,l.getAttribute("data-act"),l.getAttribute("data-m")||"");});});
   var k=Math.max(view.k,45),p=pads(),mob=vw<640;
   var sx=mob?vw/2:(vw+420)/2,sy=mob?Math.max(p.t+40,(vh-sheet.offsetHeight)/2+40):vh/2;

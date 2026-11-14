@@ -474,5 +474,13 @@
   "listings": [],
   "api": "https://kaury-api.vercel.app/api/",
   "canal": "may"
+ },
+ "kaurystore.com.ar": {
+  "name": "kaurystore",
+  "origin": "https://www.kaurystore.com.ar",
+  "listings": [
+   "/colecciones/?page={p}",
+   "/mayorista/kaury-mayorista/?page={p}"
+  ]
  }
 }
