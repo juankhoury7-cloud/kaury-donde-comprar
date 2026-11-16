@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-9vAcgi0CRgmmJwOPKepPttpYpepfXWgWV7FMXpCGJyw=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'none'; form-action 'self'">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-TCc/TppUnlwl4C08nrsR/4NhuhcZXSTn8Hzw/SWyV0w=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
 <title>Kaury · Dónde comprar · Por unidad y por mayor</title>
 <meta name="description" content="Buscá un artículo Kaury por número, elegí color y talle, y te mostramos las tiendas online que lo tienen en stock, con el link directo.">
@@ -27,7 +27,7 @@ html,body{max-width:100%;overflow-x:hidden}
   color-scheme:light;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%}
+html,body{margin:0;height:100%;touch-action:manipulation}
 body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--sans);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;overflow:hidden}
 button,input,select{font:inherit;color:inherit}
 a{color:inherit}
@@ -299,7 +299,7 @@ a{color:inherit}
 .ptab[hidden]{display:none}
 .ptab>.card,.ptab>.dgrid,.ptab>.kpis{margin-bottom:12px}
 .ch{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
-.ch select,.uf select,.uf input[type=search]{font:inherit;font-size:14px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--white);color:var(--ink)}
+.ch select,.uf select,.uf input[type=search]{font:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--white);color:var(--ink)}
 .uf{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 10px;align-items:center}
 .uf input[type=search]{flex:1 1 200px;min-width:0}
 .uchk{font-size:13.5px;color:var(--ink2);display:flex;gap:6px;align-items:center}
@@ -802,11 +802,18 @@ function end(e){
   var wasTap=e.type==="pointerup"&&!moved&&downAt&&downAt.n<=1&&Object.keys(ptrs).length===1&&Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)<10;
   delete ptrs[e.pointerId];svg.classList.remove("drag");
   if(Object.keys(ptrs).length)begin();else{start=null;moved=false;}
-  if(wasTap)tapAt(e.clientX,e.clientY);
+  if(wasTap){
+    /* doble toque en el celular: acerca el mapa en ese punto (no la página entera) */
+    var now=Date.now();
+    if(e.pointerType!=="mouse"&&lastTap&&!lastTap.hit&&now-lastTap.t<320&&Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<40){lastTap=null;touchZoomAt=now;var r=svg.getBoundingClientRect();zoomTo(e.clientX-r.left,e.clientY-r.top,2.2);}
+    else lastTap={x:e.clientX,y:e.clientY,t:now,hit:tapAt(e.clientX,e.clientY)};
+  }
 }
+var lastTap=null,touchZoomAt=0;
+function zoomTo(mx,my,f){var k=Math.max(minK(),Math.min(4000,view.k*f)),wx=view.x+mx/view.k,wy=view.y+my/view.k;animateTo({x:wx-mx/k,y:wy-my/k,k:k},350);}
 svg.addEventListener("pointerup",end);svg.addEventListener("pointercancel",end);
 svg.addEventListener("wheel",function(e){e.preventDefault();var r=svg.getBoundingClientRect();zoomAt(e.clientX-r.left,e.clientY-r.top,Math.exp(-e.deltaY*0.0018));},{passive:false});
-svg.addEventListener("dblclick",function(e){if(e.target.closest(".cl"))return;var r=svg.getBoundingClientRect();var mx=e.clientX-r.left,my=e.clientY-r.top,k=Math.min(4000,view.k*2.2),wx=view.x+mx/view.k,wy=view.y+my/view.k;animateTo({x:wx-mx/k,y:wy-my/k,k:k},350);});
+svg.addEventListener("dblclick",function(e){e.preventDefault();if(e.target.closest(".cl")||Date.now()-touchZoomAt<600)return;var r=svg.getBoundingClientRect();zoomTo(e.clientX-r.left,e.clientY-r.top,2.2);});
 function zoomAt(mx,my,f){var k=Math.max(minK(),Math.min(4000,view.k*f)),wx=view.x+mx/view.k,wy=view.y+my/view.k;view={x:wx-mx/k,y:wy-my/k,k:k};applyView();}
 function zoomBy(f){var k=Math.max(minK(),Math.min(4000,view.k*f));animateTo({x:view.x+vw/2/view.k-vw/2/k,y:view.y+vh/2/view.k-vh/2/k,k:k},300);}
 $("zin").addEventListener("click",function(){zoomBy(2);});$("zout").addEventListener("click",function(){zoomBy(.5);});
