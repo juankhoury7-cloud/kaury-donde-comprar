@@ -152,3 +152,27 @@ console.log('OK');
   assert.deepEqual(r.ent, { Negro: ['85'], 'Fresa "x]"': ['100'] });
   console.log('wix OK');
 }
+
+// Intimates de fábrica: "P" + número (P110 = art. 110). Solo números de la línea Intimates; los packs P de otros números no.
+{
+  const { listProducts, pcode, dulceShop } = await import('../scraper/lib.mjs');
+  const C = new Set(['4030', '110', '31', '8279']); C.int = new Set(['110', '31']);
+  assert.equal(pcode('P110KA', C), '110'); assert.equal(pcode('p-31', C), '31');
+  assert.equal(pcode('P142KA', C), null); assert.equal(pcode('P4030', C), null); assert.equal(pcode('110', C), null);
+  const h = `<html><body>
+   <a href="https://p.test/productos/pack-x-3-colales-p110ka/">PACK X 3 COLALES ALG LYCRA LISA ART.: P110KA</a>
+   <a href="https://p.test/productos/pack-x-3-colales-p31ka/">PACK X 3 COLALES ART.: P31KA</a>
+   <a href="https://p.test/productos/pack-x-3-colales-p142ka/">PACK X 3 COLALESS ALG ESTAMP ART.: P142KA</a>
+   <a href="https://p.test/productos/kaury-4030/">Kaury 4030</a></body></html>`;
+  const orig = globalThis.fetch; globalThis.fetch = async () => new Response(h, { status: 200 });
+  const r = await listProducts({ origin: 'https://p.test', listings: ['/marca/kaury/'] }, C);
+  assert.deepEqual(Object.keys(r.prods).sort(), ['110', '31', '4030']);
+  assert.equal(r.prods['110'], 'https://p.test/productos/pack-x-3-colales-p110ka/');
+  const dc = `<form action="procesa_pedido.php?pcodigo=P110KA"><select name="talle_prod"><option value="2">2</option></select></form>
+   <form action="procesa_pedido.php?pcodigo=P142KA"><select name="talle_prod"><option value="2">2</option></select></form>`;
+  globalThis.fetch = async u => new Response(String(u).includes('actualizar_colores') ? '<option value="1">SURTIDO</option>' : dc, { status: 200 });
+  const d = await dulceShop({ origin: 'https://d.test' }, C);
+  globalThis.fetch = orig;
+  assert.deepEqual(Object.keys(d.prods), ['110']); assert.deepEqual(d.ent['110'], { SURTIDO: ['2'] });
+  console.log('ok: códigos P de Intimates');
+}

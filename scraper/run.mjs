@@ -16,6 +16,8 @@ const LIST_EVERY = 60 * 60e3;
 
 const [shops, catalog, sizes, stores] = await Promise.all([json('shops.json'), json('catalog.json'), json('sizes.json'), json('stores.json')]);
 const CAT = new Set(catalog.map(r => r[0]));
+// Intimates sale de fábrica como "P" + número (P110 = art. 110 de Intimates): se acepta la P solo para esos números.
+CAT.int = new Set(catalog.filter(r => r[2] === 'intimates').map(r => r[0]));
 const normalize = makeNormalizer(catalog, sizes);
 
 let prev = null;

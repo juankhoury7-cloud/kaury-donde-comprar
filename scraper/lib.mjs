@@ -40,7 +40,9 @@ export async function pool(items, n, fn) {
 const BAD = /search|[?&]s=|\/page\/|cart|carrito|wishlist|login|cuenta|account|whatsapp|instagram|facebook|javascript:|mailto:|tel:|^#/i;
 const core = h => h.replace(/^(www|tienda|store|shop)\./, '');
 const CODE_RE = /(?:\b|(?<=\bkau?))\d{3,4}(?=k?\b)/gi;
-const KR = /kaury|kau\d|-kau|-kai|-kam|\bka\d|-ka\d|art-ka/i;
+const KR = /kaury|kau\d|-kau|-kai|-kam|\bka\d|-ka\d|art-ka|\bp-?\d{2,3}-?ka\b/i;
+// Intimates: "P110", "P-31", "p110ka" (el número se valida contra la línea Intimates con pcode)
+const PCODE_RE = /(?<![a-z\d])p-?\d{2,3}(?=(?:ka?)?(?![a-z\d]))/gi;
 
 /** Recorre los listados de una tienda y devuelve {codigo: url} de los artículos Kaury del catálogo. */
 export async function listProducts(shop, CAT) {
@@ -84,7 +86,9 @@ export async function listProducts(shop, CAT) {
         if (!okHost(abs.host) || /avril|marcela|kaury-?men|kaury-int/i.test(abs.pathname)) continue;
         const m = cre ? (abs.pathname + abs.search).match(cre) : abs.pathname.match(/(?:kaury|art|ka)-?p?-?(\d{3,4})(?=[-\/k]|$)|(?<![\d])(\d{3,4})-kaury\b/i);
         const base = core(abs.host) === core(host) ? O.replace(/\/$/, '') : abs.origin;
+        const pc = !cre && !m && /kaury|\bka\b|-ka\b|ka-/i.test(abs.pathname) && [...abs.pathname.matchAll(PCODE_RE)].map(x => pcode(x[0], CAT)).find(Boolean);
         if (m) add(m[1] || m[2], base + abs.pathname + (cre && /\?/.test(shop.codeRe) ? abs.search : ''));
+        else if (pc) add(pc, base + abs.pathname);
       }
       continue;
     }
@@ -109,7 +113,9 @@ export async function listProducts(shop, CAT) {
           .replace(/\$\s?[\d.,]+|\d+[.,]\d+/g, ' ');
         if (/avril|kaury men/i.test(t)) continue;
         const cs = t.match(CODE_RE) || [];
+        for (const m of t.matchAll(PCODE_RE)) { const c = pcode(m[0], CAT); if (c) cs.push(c); }
         if (/kaury/i.test(abs.pathname)) { const m = abs.pathname.match(/(?:kaury|art|ka)-?p?-?(\d{3,4})(?=[-\/k]|$)/i); if (m) cs.push(m[1]); }
+        for (const m of abs.pathname.matchAll(PCODE_RE)) { const c = pcode(m[0], CAT); if (c) cs.push(c); }
         if (!cs.length) continue;
         const url = abs.origin + abs.pathname;
         for (const c of cs) { const k = c + '|' + url; cnt[k] = (cnt[k] || 0) + 1; if (!prod[c] || cnt[k] > cnt[c + '|' + prod[c]]) prod[c] = url; }
@@ -352,7 +358,9 @@ async function post(url, params, { timeout = 20000 } = {}) {
     return r.ok ? await r.text() : null;
   } catch { return null; }
 }
-const digits = (c, CAT) => { const m = String(c).match(/^\d{2,4}/); return m && CAT.has(m[0].replace(/^0+(?=\d{2})/, '')) ? m[0].replace(/^0+(?=\d{2})/, '') : null; };
+/** "P110", "P-31", "P110KA": código de Intimates como sale de fábrica (P + número). Solo vale si ese número es de Intimates. */
+export const pcode = (c, CAT) => { const m = String(c).match(/^p-?0*(\d{2,3})(?![\d])/i); return m && CAT.int && CAT.int.has(m[1]) ? m[1] : null; };
+const digits = (c, CAT) => { const m = String(c).match(/^\d{2,4}/); if (m && CAT.has(m[0].replace(/^0+(?=\d{2})/, ''))) return m[0].replace(/^0+(?=\d{2})/, ''); return pcode(c, CAT); };
 
 // VTEX (Coppel): catálogo público en JSON con stock por talle. Cada color es un producto aparte, así que el botón lleva
 // a la búsqueda del artículo en la tienda (muestra todos sus colores). El número sale del link o de "Modelo / Código".
@@ -412,22 +420,22 @@ export async function dulceShop(shop, CAT) {
 // Lencería PM: la grilla de la marca se pide por POST (productos-grilla.php, de a 16); en cada producto, los colores
 // con stock de cada talle salen de ajax/producto_colores.php.
 export async function pmShop(shop, CAT) {
-  const prods = {}, ent = {}, marca = shop.marca || 'KAUR', O = shop.origin, codes = new Set();
+  const prods = {}, ent = {}, marca = shop.marca || 'KAUR', O = shop.origin, codes = new Map(); // catálogo -> código de la tienda (P110 -> 110)
   for (let ini = 0; ini < 640; ini += 16) {
     const t = await post(O + '/productos-grilla.php', { colname_tipo_menu: 'marca', colname_categoria_raiz: '1', id_categoria_seleccionada: marca, colname_marca_default: marca, colname_referencia_default: '', colname_talle: '', colname_color: '', colname_marca: '', colname_orden: '', inicio: String(ini) });
     if (!t) { if (!ini) return { prods, ent, err: 'listado' }; break; }
-    const n = codes.size; for (const m of t.matchAll(/producto\.php\?marca=\w+&(?:amp;)?codigo=(\w+)/g)) { const c = digits(m[1], CAT); if (c && m[1] === c) codes.add(c); }
+    const n = codes.size; for (const m of t.matchAll(/producto\.php\?marca=\w+&(?:amp;)?codigo=(\w+)/g)) { const c = digits(m[1], CAT); if (c && (m[1] === c || pcode(m[1], CAT) === c) && !codes.has(c)) codes.set(c, m[1]); }
     if (codes.size === n && ini) break;
     await sleep(250);
   }
-  await pool([...codes], 2, async code => {
+  await pool([...codes], 2, async ([code, raw]) => {
     await sleep(250 + Math.random() * 300);
-    const url = `${O}/producto.php?marca=${marca}&codigo=${code}`, r = await get(url); if (!r.html) return;
+    const url = `${O}/producto.php?marca=${marca}&codigo=${raw}`, r = await get(url); if (!r.html) return;
     const suc = (r.html.match(/id="suc_cod"[^>]*value="([^"]*)"/) || r.html.match(/value="([^"]*)"[^>]*id="suc_cod"/) || [])[1] || '1';
     const tal = [...new Set([...r.html.matchAll(/id="talle_([^"]+)"[^>]*onclick="establecerTalle\('([^']+)'/g)].map(m => m[2]))];
     prods[code] = url; const e = ent[code] = {};
     for (const t of tal) {
-      const x = await post(O + '/ajax/producto_colores.php', { suc_cod: suc, cod_spro: code, marca_cod: marca, tal_cod: t }); if (!x) continue;
+      const x = await post(O + '/ajax/producto_colores.php', { suc_cod: suc, cod_spro: raw, marca_cod: marca, tal_cod: t }); if (!x) continue;
       for (const m of x.matchAll(/class="color_disponible"[^>]*>([^<]+)</g)) { const c = m[1].trim(); (e[c] = e[c] || []).includes(t) || e[c].push(t); }
       await sleep(150);
     }
