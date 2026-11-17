@@ -391,10 +391,12 @@ export async function dulceShop(shop, CAT) {
   const prods = {}, ent = {};
   const list = shop.origin + (shop.listing || '/catalogo2024.php?id_marca=7&id_rubro=0&ptalle=todos&id_color=0');
   const r = await get(list); if (!r.html) return { prods, ent, err: 'listado: ' + (r.status || r.err) };
-  const d = parse(r.html), jobs = [];
-  for (const f of d.querySelectorAll('form[action*="procesa_pedido.php?pcodigo="]')) {
-    const raw = (f.getAttribute('action').match(/pcodigo=([^&"]+)/) || [])[1], code = raw && digits(raw, CAT); if (!code || prods[code]) continue;
-    const tal = f.querySelectorAll('select[name="talle_prod"] option').map(o => o.getAttribute('value')).filter(Boolean);
+  const jobs = [];
+  // cada artículo es un <form action="procesa_pedido.php?pcodigo=XXXX"> con su lista de talles
+  for (const m of r.html.matchAll(/<form[^>]*action="procesa_pedido\.php\?pcodigo=([^"&]+)"[^>]*>([\s\S]*?)<\/form>/g)) {
+    const raw = m[1], code = digits(raw, CAT); if (!code || prods[code]) continue;
+    const sel = (m[2].match(/<select[^>]*name="talle_prod"[^>]*>([\s\S]*?)<\/select>/) || [])[1] || '';
+    const tal = [...sel.matchAll(/<option value="([^"]+)"/g)].map(x => x[1]).filter(Boolean);
     prods[code] = list + '#banners-' + raw; ent[code] = {};
     tal.forEach(t => jobs.push([code, raw, t]));
   }
