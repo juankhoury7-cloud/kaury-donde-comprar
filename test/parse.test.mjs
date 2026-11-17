@@ -194,3 +194,16 @@ console.log('OK');
   assert.deepEqual(r.ent, { BLANCO: ['85', '90'], VISON: ['85'] });
   console.log('tabla por cantidades OK');
 }
+
+// Ceros adelante: "0153" = art. 153, "kaury-0018" = art. 18.
+{
+  const { listProducts } = await import('../scraper/lib.mjs');
+  const C = new Set(['153', '18', '8199']);
+  const h = `<a href="https://z.test/productos/pack-x3-colaless-kaury-0153/">Pack x3 colaless Kaury 0153</a>
+   <a href="https://z.test/productos/kaury-art-0018/">Kaury art. 0018 pack x3</a>
+   <a href="https://z.test/productos/kaury-8199/">Kaury 8199</a>`;
+  const orig = globalThis.fetch; globalThis.fetch = async () => new Response(h, { status: 200 });
+  const r = await listProducts({ origin: 'https://z.test', listings: ['/marca/kaury/'] }, C); globalThis.fetch = orig;
+  assert.deepEqual(Object.keys(r.prods).sort(), ['153', '18', '8199']);
+  console.log('ceros adelante OK');
+}

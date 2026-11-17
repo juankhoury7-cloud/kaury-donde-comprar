@@ -40,6 +40,8 @@ export async function pool(items, n, fn) {
 const BAD = /search|[?&]s=|\/page\/|cart|carrito|wishlist|login|cuenta|account|whatsapp|instagram|facebook|javascript:|mailto:|tel:|^#/i;
 const core = h => h.replace(/^(www|tienda|store|shop)\./, '');
 const CODE_RE = /(?:\b|(?<=\bkau?))\d{3,4}(?=k?\b)/gi;
+// Muchas tiendas rellenan con ceros: "0153" = art. 153, "0018" = art. 18 (se quitan los ceros de adelante).
+export const nc = c => String(c).replace(/^0+(?=\d{2})/, '');
 const KR = /kaury|kau\d|-kau|-kai|-kam|\bka\d|-ka\d|art-ka|\b[pm]-?\d{2,3}-?ka\b/i;
 // Intimates "P110", "P-31", "p110ka" y Summer "M650" (el número se valida contra su línea con pcode)
 const PCODE_RE = /(?<![a-z\d])[pm]-?\d{2,3}(?=(?:ka?)?(?![a-z\d]))/gi;
@@ -118,7 +120,7 @@ export async function listProducts(shop, CAT) {
         for (const m of abs.pathname.matchAll(PCODE_RE)) { const c = pcode(m[0], CAT); if (c) cs.push(c); }
         if (!cs.length) continue;
         const url = abs.origin + abs.pathname;
-        for (const c of cs) { const k = c + '|' + url; cnt[k] = (cnt[k] || 0) + 1; if (!prod[c] || cnt[k] > cnt[c + '|' + prod[c]]) prod[c] = url; }
+        for (const c of cs) add(c, url); // add() quita los ceros de adelante; repetidos suman (el link que más lo nombra gana)
       }
       if (Object.keys(prod).length === n || !T.includes('{p}')) break;
     }
@@ -131,7 +133,7 @@ export async function listProducts(shop, CAT) {
   // descartar links cuyo path tiene otro número de artículo
   // si el link dice explícitamente el artículo ("kaury-art-8194", "art-4030", "kaury-8248"), tiene que ser ese:
   // evita que "talles 85 al 100" se tome como art. 100
-  if (!shop.codeRe && !shop.pairRe) pairs = pairs.filter(([c, v]) => { const m = new URL(v).pathname.match(/(?:kaury|art)[-_]?(?:art[-_]?)?(\d{3,4})(?!\d)/i); return !m || m[1] === c; });
+  if (!shop.codeRe && !shop.pairRe) pairs = pairs.filter(([c, v]) => { const m = new URL(v).pathname.match(/(?:kaury|art)[-_]?(?:art[-_]?)?(\d{3,4})(?!\d)/i); return !m || nc(m[1]) === c; });
   if (!shop.codeRe && !shop.pairRe) pairs = pairs.filter(([c, v]) => { const path = new URL(v).pathname; if (path.includes(c)) return true; return !(path.match(/(?<!\d)\d{2,4}(?!\d)/g) || []).some(n => n !== c); });
   return { prods: Object.fromEntries(pairs), pagesOk, err: pagesOk ? null : (firstErr || 'sin respuesta') };
 }
@@ -347,7 +349,7 @@ export async function apiShop(shop, CAT) {
     for (const x of list) {
       const name = (x.name && x.name.es) || '', cats = (x.categories || []).map(c => (c.name && c.name.es) || '').join(' ');
       if (/^match|segunda selec/i.test(name) || /avril|match|boxer/i.test(cats)) continue;
-      const code = (name.match(/\b\d{3,4}\b/g) || []).find(c => CAT.has(c)); if (!code || prods[code]) continue;
+      const code = (name.match(/\b\d{3,4}\b/g) || []).map(nc).find(c => CAT.has(c)); if (!code || prods[code]) continue;
       prods[code] = shop.origin + '/producto/' + x.id;
       const e = {};
       for (const v of x.variants || []) {
@@ -390,6 +392,7 @@ export async function vtexShop(shop, CAT, catalog) {
       if (!/kaury/i.test(p.brand || '') || /avril|men\b/i.test(p.brand || '')) continue;
       const path = String(p.link || '').replace(/^https?:\/\/[^/]+/, ''), txt = (p.description || '') + ' ' + ((p.items || [])[0] || {}).complementName;
       let code = (path.match(/(?:kaury|art|ka)[-_]?(\d{3,4})(?!\d)/i) || [])[1] || (txt.match(/Modelo[^0-9<]{0,40}(\d{3,4})(?!\d)/i) || [])[1] || (txt.match(/Modelo\s*\(?\s*(\d{3,4})/i) || [])[1];
+      if (code) code = nc(code);
       if (!code || !CAT.has(code)) continue;
       const name = nz(p.productName || ''), cols = (colorsOf[code] || []).slice().sort((a, b) => b.length - a.length);
       const color = cols.find(c => name.includes(nz(c))) || 'Único';
