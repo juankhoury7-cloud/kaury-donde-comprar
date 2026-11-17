@@ -181,3 +181,16 @@ console.log('OK');
   assert.deepEqual(Object.keys(ms.prods), ['650']);
   console.log('ok: códigos P de Intimates y M de Summer');
 }
+
+// Casa Ari: tabla de compra por cantidades (colores x talles), "Sin stock" en la celda que no hay.
+{
+  const { readStock } = await import('../scraper/lib.mjs');
+  const h = `<form class="multi-variation-form"><table class="shop_table variations-table"><thead><tr><th>Color</th><th>85</th><th>90</th></tr></thead>
+   <tbody><tr><th>BLANCO</th><td><div class="variation-price"></div><input type="number" class="variation_qty" data-id="1"></td><td><input type="number" class="variation_qty" data-id="2"></td></tr>
+   <tr><th>VISON</th><td><input type="number" class="variation_qty" data-id="3"></td><td>Sin stock</td></tr>
+   <tr><th>NEGRO</th><td>Sin stock</td><td>Sin stock</td></tr></tbody></table></form>`;
+  const orig = globalThis.fetch; globalThis.fetch = async () => new Response(h, { status: 200 });
+  const r = await readStock('https://ari.test/producto/conj-top-kau8215/'); globalThis.fetch = orig;
+  assert.deepEqual(r.ent, { BLANCO: ['85', '90'], VISON: ['85'] });
+  console.log('tabla por cantidades OK');
+}

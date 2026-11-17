@@ -560,5 +560,14 @@
   ],
   "codeRe": "/producto/ka(\\d{2,4})-",
   "canal": "may"
+ },
+ "casaari.com.ar": {
+  "name": "casaari",
+  "origin": "https://casaari.com.ar",
+  "listings": [
+   "/marca/kaury/page/{p}/"
+  ],
+  "codeRe": "/producto/[^/]*-kau(\\d{2,4})/?$",
+  "canal": "may"
  }
 }

@@ -213,12 +213,25 @@ function empretienda(h) {
  *  Devuelve {ent, vars}: ent = {color:[talles]} | 0 (sin stock) | '?' (no se ve); vars = [[color, talle, sufijo de link]]
  *  o 'E' si la página no respondió. El sufijo abre el artículo con ese color y talle ya elegidos
  *  (Tiendanube: variant=ID · WooCommerce: attribute_pa_color=..&attribute_pa_talle=..; Empretienda no lo admite). */
+// Woo con tabla de compra por cantidades (Casa Ari): filas = colores, columnas = talles; la celda con casillero de
+// cantidad está disponible, la que dice "Sin stock" no.
+function matrix(d) {
+  const tb = d.querySelector('table.variations-table'); if (!tb) return null;
+  const heads = tb.querySelectorAll('thead th').map(e => e.text.trim()).slice(1), rows = [];
+  for (const tr of tb.querySelectorAll('tbody tr')) {
+    const color = (tr.querySelector('th') || { text: '' }).text.trim();
+    tr.querySelectorAll('td').forEach((td, i) => { if (heads[i]) rows.push([color, heads[i], !!td.querySelector('input.variation_qty')]); });
+  }
+  return rows.length ? rows : null;
+}
+
 export async function readStock(url) {
   const r = await get(url);
   if (!r.html) { if (r.status === 404) return { ent: 0, vars: [] }; const k = r.status || r.err || '?'; lastErr[k] = (lastErr[k] || 0) + 1; return 'E'; }
   const h = r.html, d = parse(h), px = price(d, h);
   const done = o => (px ? Object.assign(o, { price: px }) : o);
   let rows = tiendanube(d); if (rows) return done(pack(rows));
+  rows = matrix(d); if (rows) return done(pack(rows));
   rows = woo(d); if (rows === 'ajax') return done({ ent: '?', vars: [] }); if (rows) return done(pack(rows));
   rows = empretienda(h); if (rows) return done(pack(rows.map(x => x.slice(0, 3))));
   rows = cygnus(d); if (rows) return done(pack(rows));
