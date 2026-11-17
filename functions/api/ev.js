@@ -1,6 +1,6 @@
 // POST /api/ev -> búsquedas y clics anónimos del mapa público.
 // Protección contra abuso (alguien que toca "buscar" mil veces o un programa que manda pedidos):
-//  · solo desde la propia página · 6 envíos y 60 eventos por minuto por IP (por servidor)
+//  · solo desde la propia página o desde kaury.com (sección Encontranos) · 6 envíos y 60 eventos por minuto por IP (por servidor)
 //  · la misma búsqueda o el mismo clic repetido por la misma persona en 30 minutos se cuenta una sola vez
 //  · solo artículos y provincias que existen
 //  · 500 eventos por día por IP, contados en la base (vale para todos los servidores)
@@ -9,6 +9,7 @@
 import { db, json } from '../../lib/db.js';
 import { allow, ipOf, ipHash, dbAllow, sameOrigin, tooMany } from '../../lib/guard.js';
 import { ART, PROVS } from '../../lib/match.js';
+import { KAURY_ORIGINS, corsHeaders } from '../../lib/cors.js';
 const S = (x, n = 60) => (x == null ? '' : String(x)).slice(0, n);
 const I = x => (Number.isFinite(+x) ? Math.trunc(+x) : null);
 const day = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10); // día en hora argentina
@@ -23,9 +24,9 @@ function fresh(key, now) {
   return true;
 }
 const okArt = a => !a || !!ART[a] || /^\?[^<>]{1,20}$/.test(a);
-export async function onRequestPost({ request, env }) {
+async function handle({ request, env }) {
   if (env.EV_OFF === '1') return json({ ok: true, n: 0, off: true });
-  if (!sameOrigin(request)) return json({ error: 'origen no permitido' }, 403);
+  if (!sameOrigin(request) && !KAURY_ORIGINS.includes(request.headers.get('Origin'))) return json({ error: 'origen no permitido' }, 403);
   const ip = ipOf(request);
   if (!allow('evr:' + ip, 6, 60e3)) return tooMany();
   if (capDay === day()) return json({ ok: false, error: 'tope diario alcanzado' }, 429);
@@ -45,4 +46,11 @@ export async function onRequestPost({ request, env }) {
   await DB.batch(rows.map(e => { let ts = I(e.ts); if (!ts || Math.abs(ts - now) > 864e5) ts = now;
     return st.bind(ts, sid, e.t, S(e.a, 24), S(e.c, 120), S(e.z, 60), S(e.p, 40), I(e.r), I(e.st), S(e.k, 8), ['may', 'all'].includes(e.m) ? e.m : 'min', SRC.includes(e.o) ? e.o : null); }));
   return json({ ok: true, n: rows.length });
+}
+// kaury.com manda los eventos desde otro dominio: se agregan los permisos (CORS) solo para kaury.com.
+export async function onRequestOptions({ request }) { return new Response(null, { status: 204, headers: corsHeaders(request, { dev: false }) }); }
+export async function onRequestPost(ctx) {
+  const r = await handle(ctx), h = corsHeaders(ctx.request, { dev: false });
+  for (const [k, v] of Object.entries(h)) r.headers.set(k, v);
+  return r;
 }

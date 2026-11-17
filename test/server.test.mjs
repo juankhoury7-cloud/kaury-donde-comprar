@@ -40,6 +40,19 @@ assert.equal(matches(snap, { a: '8100', c: 'Fresa', z: '95', p: 'CABA' }).length
   assert.ok(a >= mi && a >= ma && a <= mi + ma, 'aviso "todos" junta por unidad y por mayor');
   console.log('aviso por unidad y por mayor juntos: 4030 →', mi, '+', ma, '=', a, 'tiendas'); }
 console.log('avisos:', describe({ a: '8100', c: 'Fresa+Negro', z: '95', p: 'Salta' }), '→ OK');
+// --- datos para kaury.com: misma cantidad de locales que el mapa; una tienda caída no se incluye; CORS solo kaury.com
+{
+  const { shape } = await import(join(tmp, 'lib', 'public.js'));
+  const { corsHeaders } = await import(join(tmp, 'lib', 'cors.js'));
+  const snap = JSON.parse(await readFile(join(root, 'data', 'snapshot.json'), 'utf8'));
+  const a = shape(snap), k = Object.keys(snap.prods).find(h => a.stores.some(s => s.chs.some(c => Object.values(c.prod).some(u => u.includes(h.replace(/^www\./, ''))))));
+  assert.ok(a.stores.length > 50 && a.catalog.length > 100);
+  assert.ok(shape({ ...snap, down: [k] }).stores.length < a.stores.length, 'la tienda caída no debe aparecer');
+  const req = o => new Request('https://x/api/v1/donde-comprar', { headers: o ? { Origin: o } : {} });
+  assert.equal(corsHeaders(req('https://www.kaury.com'))['Access-Control-Allow-Origin'], 'https://www.kaury.com');
+  assert.deepEqual(corsHeaders(req('https://otra-web.com')), {});
+  console.log('datos para kaury.com OK');
+}
 await rm(tmp, { recursive: true });
 { // historial de stock: cuenta tiendas con cada artículo
   const { counts } = await import('../lib/hist.js');
