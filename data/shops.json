@@ -482,5 +482,83 @@
    "/colecciones/?page={p}",
    "/mayorista/kaury-mayorista/?page={p}"
   ]
+ },
+ "casaandylenceria.com.ar": {
+  "name": "casaandy",
+  "origin": "https://casaandylenceria.com.ar",
+  "listings": [
+   "/marcas1/kaury/page/{p}/"
+  ],
+  "canal": "may"
+ },
+ "casakiko.online": {
+  "name": "casakiko",
+  "origin": "https://www.casakiko.online",
+  "listings": [
+   "sitemap:/store-products-sitemap.xml"
+  ],
+  "codeRe": "kaury-art-(\\d{3,4})(?!\\d)"
+ },
+ "coppel.com.ar": {
+  "name": "coppel",
+  "origin": "https://www.coppel.com.ar",
+  "kind": "vtex",
+  "ft": "kaury"
+ },
+ "domenica.com.ar": {
+  "name": "domenica",
+  "origin": "https://domenica.com.ar",
+  "listings": [
+   "/search/?q=kaury&page={p}"
+  ],
+  "codeRe": "/productos/[a-z-]*?(\\d{3,4})/?$"
+ },
+ "dulcecamila.com": {
+  "name": "dulcecamila",
+  "origin": "https://dulcecamila.com",
+  "kind": "dulcecamila",
+  "listing": "/catalogo2024.php?id_marca=7&id_rubro=0&ptalle=todos&id_color=0",
+  "canal": "may"
+ },
+ "pedix.app/lenamalenceria": {
+  "name": "lenama",
+  "origin": "https://pedix.app",
+  "kind": "listonly",
+  "listings": [
+   "/lenamalenceria/categoria/PQEQrIIclJZ6eVCgNKs1"
+  ],
+  "pairRe": "(?=title=\"Art\\.\\s*\\d{3,4}[^\"]*\"\\s+href=\"([^\"]+)\")title=\"Art\\.\\s*(\\d{3,4})",
+  "pairBase": "https://pedix.app/",
+  "canal": "may"
+ },
+ "lenceriamarino.com.ar": {
+  "name": "marino",
+  "origin": "https://www.lenceriamarino.com.ar",
+  "listings": [
+   "/search/?q=kau&page={p}"
+  ]
+ },
+ "lenceriapm.com.ar": {
+  "name": "lenceriapm",
+  "origin": "https://lenceriapm.com.ar",
+  "kind": "pm",
+  "marca": "KAUR",
+  "canal": "may"
+ },
+ "lencerianikole.com.ar": {
+  "name": "nikole",
+  "origin": "https://www.lencerianikole.com.ar",
+  "listings": [
+   "/productos/page/{p}/?Marca=Kaury"
+  ]
+ },
+ "spiritlenceriamayorista.com.ar": {
+  "name": "spirit",
+  "origin": "https://spiritlenceriamayorista.com.ar",
+  "listings": [
+   "/etiqueta-producto/kaury/page/{p}/"
+  ],
+  "codeRe": "/producto/ka(\\d{2,4})-",
+  "canal": "may"
  }
 }

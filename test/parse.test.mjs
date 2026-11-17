@@ -140,3 +140,15 @@ console.log('OK');
   assert.ok(r.vars.some(([c, z, sx]) => c === 'negro' && z === '95' && sx === 'attribute_pa_colores=negro&attribute_pa_talles=95'));
   console.log('woo "cualquiera" OK');
 }
+// --- Wix (Casa Kiko): stock por combinación talle/color desde el JSON de la página
+{
+  const { wix, readStock } = await import('../scraper/lib.mjs');
+  const h = '<html>static.wixstatic.com "productItems":[{"optionsSelections":[1,5],"isVisible":true,"isTrackingInventory":null,"inventory":{"status":"in_stock","quantity":0}},' +
+    '{"optionsSelections":[2,5],"isVisible":true,"inventory":{"status":"out_of_stock","quantity":0}},{"optionsSelections":[3,6],"isVisible":true,"isTrackingInventory":true,"inventory":{"status":"in_stock","quantity":0}},' +
+    '{"optionsSelections":[4,6],"isVisible":true,"isTrackingInventory":true,"inventory":{"status":"in_stock","quantity":2}}],"options":[{"title":"talle","selections":[{"id":1,"description":"85"},{"id":2,"description":"90"},{"id":3,"description":"95"},{"id":4,"description":"100"}]},{"title":"Color","selections":[{"id":5,"description":"Negro"},{"id":6,"description":"Fresa \\"x]\\""}]}]</html>';
+  assert.deepEqual(wix(h), [['Negro', '85', true], ['Negro', '90', false], ['Fresa "x]"', '95', false], ['Fresa "x]"', '100', true]]);
+  const orig = globalThis.fetch; globalThis.fetch = async () => new Response(h, { status: 200 });
+  const r = await readStock('https://x.test/product-page/kaury-art-8133'); globalThis.fetch = orig;
+  assert.deepEqual(r.ent, { Negro: ['85'], 'Fresa "x]"': ['100'] });
+  console.log('wix OK');
+}

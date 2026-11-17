@@ -51,6 +51,7 @@ export async function listProducts(shop, CAT) {
   //   hosts:   otras direcciones donde la tienda publica sus artículos (p. ej. gtlenceria.com.ar para gtmayorista.com)
   //   codeRe:  de dónde sale el número de artículo en el link (p. ej. "/ka(\\d{3,4})-"); si está, es la única fuente
   //   pairRe:  para tiendas que escriben el número al lado de la foto y no en el link: regex sobre el HTML con (link, número)
+  //   pairBase: dirección base para los links de pairRe cuando la página usa <base href> (Pedix)
   //   listing "sitemap:/sitemap.xml": toma los links del índice para Google (webs armadas con JavaScript)
   const okHost = h => [host, ...(shop.hosts || [])].some(x => core(x) === core(h));
   const cre = shop.codeRe ? new RegExp(shop.codeRe, 'i') : null;
@@ -94,7 +95,7 @@ export async function listProducts(shop, CAT) {
       pagesOk++;
       const n = Object.keys(prod).length;
       if (shop.pairRe) {
-        for (const m of r.html.matchAll(new RegExp(shop.pairRe, 'gi'))) { let abs; try { abs = new URL(m[1].replace(/&amp;/g, '&'), u); } catch { continue; } add(m[2], abs.href); }
+        for (const m of r.html.matchAll(new RegExp(shop.pairRe, 'gi'))) { let abs; try { abs = new URL(m[1].replace(/&amp;/g, '&'), shop.pairBase || u); } catch { continue; } add(m[2], abs.href); }
         if (Object.keys(prod).length === n || !T.includes('{p}')) break; else continue;
       }
       const d = parse(r.html);
@@ -167,6 +168,31 @@ function woo(d) {
     if (!z) z = vals.find(a => SZ.test(a)) || ''; if (!c) c = vals.find(a => a !== z) || ''; const sx = Object.entries(x.attributes || {}).filter(([, v]) => v).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&'); return [c.replace(/-/g, ' '), z, !!x.is_in_stock && x.is_purchasable !== false, sx]; });
 }
 // Tiendas Cygnus (lenceriamayorista.com.ar): una casilla por talle y color, con el stock en "max"
+// Wix (Casa Kiko): la página del producto trae "options" (talle/color con ids) y "productItems" (cada combinación,
+// con su estado de inventario). Hay stock si la combinación está visible y "in_stock" (con cantidad > 0 cuando se lleva stock).
+export function jsonArrayAt(t, key) {
+  const i = t.indexOf('"' + key + '":['); if (i < 0) return null;
+  let k = i + key.length + 3, depth = 0, inStr = false;
+  for (let j = k; j < t.length; j++) {
+    const ch = t[j];
+    if (inStr) { if (ch === '\\') j++; else if (ch === '"') inStr = false; continue; }
+    if (ch === '"') inStr = true; else if (ch === '[') depth++; else if (ch === ']') { depth--; if (depth === 0) { try { return JSON.parse(t.slice(k, j + 1)); } catch { return null; } } }
+  }
+  return null;
+}
+export function wix(h) {
+  if (!/wixstatic|wix\.com/.test(h) || !h.includes('"productItems":[')) return null;
+  const items = jsonArrayAt(h, 'productItems'), opts = jsonArrayAt(h, 'options');
+  if (!items || !opts) return null;
+  const sel = {}; for (const o of opts) for (const x of o.selections || []) sel[x.id] = { t: o.title || o.key || '', v: x.description || x.value || '' };
+  return items.map(it => {
+    const ss = (it.optionsSelections || []).map(id => sel[id]).filter(Boolean);
+    const c = (ss.find(x => /colou?r/i.test(x.t)) || {}).v || '', z = (ss.find(x => /talle|size|tama/i.test(x.t)) || {}).v || '';
+    const inv = it.inventory || {}, ok = it.isVisible !== false && inv.status === 'in_stock' && !(it.isTrackingInventory && !(inv.quantity > 0));
+    return [c, z, ok];
+  });
+}
+
 function cygnus(d) {
   const ins = d.querySelectorAll('input[data-variation-description]'); if (!ins.length) return null;
   return ins.map(i => { const t = i.getAttribute('data-variation-description') || '', z = (t.match(/talle:\s*([^/]+)/i) || [])[1] || '', c = (t.match(/color:\s*(.+)$/i) || [])[1] || '';
@@ -190,6 +216,7 @@ export async function readStock(url) {
   rows = woo(d); if (rows === 'ajax') return done({ ent: '?', vars: [] }); if (rows) return done(pack(rows));
   rows = empretienda(h); if (rows) return done(pack(rows.map(x => x.slice(0, 3))));
   rows = cygnus(d); if (rows) return done(pack(rows));
+  rows = wix(h); if (rows) return done(pack(rows));
   if (/agotado|sin stock|out of stock/i.test(d.text || '')) return { ent: 0, vars: [] };
   return done({ ent: '?', vars: [] });
 }
@@ -316,4 +343,99 @@ export async function apiShop(shop, CAT) {
     await sleep(300);
   }
   return { prods, ent, err: Object.keys(prods).length ? null : err };
+}
+
+// ---------- Tiendas con lector propio (shops.json "kind"): devuelven {prods, ent, err} como apiShop ----------
+async function post(url, params, { timeout = 20000 } = {}) {
+  try {
+    const r = await fetch(url, { method: 'POST', body: new URLSearchParams(params), headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*', 'Content-Type': 'application/x-www-form-urlencoded' }, signal: AbortSignal.timeout(timeout) });
+    return r.ok ? await r.text() : null;
+  } catch { return null; }
+}
+const digits = (c, CAT) => { const m = String(c).match(/^\d{2,4}/); return m && CAT.has(m[0].replace(/^0+(?=\d{2})/, '')) ? m[0].replace(/^0+(?=\d{2})/, '') : null; };
+
+// VTEX (Coppel): catálogo público en JSON con stock por talle. Cada color es un producto aparte, así que el botón lleva
+// a la búsqueda del artículo en la tienda (muestra todos sus colores). El número sale del link o de "Modelo / Código".
+export async function vtexShop(shop, CAT, catalog) {
+  const prods = {}, ent = {}; let err = null, n = 0;
+  const colorsOf = Object.fromEntries(catalog.map(r => [r[0], r[3].split('|').map(x => x.slice(0, x.lastIndexOf(':')))]));
+  for (let from = 0; from < 1000; from += 50) {
+    const r = await get(`${shop.origin}/api/catalog_system/pub/products/search?ft=${encodeURIComponent(shop.ft || 'kaury')}&_from=${from}&_to=${from + 49}`, { timeout: 25000 });
+    if (!r.html) { err = r.status || r.err || 'sin respuesta'; break; }
+    let list; try { list = JSON.parse(r.html); } catch { err = 'json'; break; }
+    if (!Array.isArray(list) || !list.length) break; n += list.length;
+    for (const p of list) {
+      if (!/kaury/i.test(p.brand || '') || /avril|men\b/i.test(p.brand || '')) continue;
+      const path = String(p.link || '').replace(/^https?:\/\/[^/]+/, ''), txt = (p.description || '') + ' ' + ((p.items || [])[0] || {}).complementName;
+      let code = (path.match(/(?:kaury|art|ka)[-_]?(\d{3,4})(?!\d)/i) || [])[1] || (txt.match(/Modelo[^0-9<]{0,40}(\d{3,4})(?!\d)/i) || [])[1] || (txt.match(/Modelo\s*\(?\s*(\d{3,4})/i) || [])[1];
+      if (!code || !CAT.has(code)) continue;
+      const name = nz(p.productName || ''), cols = (colorsOf[code] || []).slice().sort((a, b) => b.length - a.length);
+      const color = cols.find(c => name.includes(nz(c))) || 'Único';
+      prods[code] = `${shop.origin}/kaury%20${code}?_q=kaury%20${code}&map=ft`;
+      const e = ent[code] || (ent[code] = {});
+      for (const it of p.items || []) {
+        const q = +((((it.sellers || [])[0] || {}).commertialOffer || {}).AvailableQuantity || 0), z = (it.Talle || it.talle || ['u'])[0];
+        if (q > 0) { (e[color] = e[color] || []).includes(z) || e[color].push(z); }
+      }
+    }
+    if (list.length < 50) break;
+    await sleep(300);
+  }
+  for (const c of Object.keys(ent)) if (!Object.keys(ent[c]).length) ent[c] = 0;
+  return { prods, ent, err: Object.keys(prods).length ? null : (err || (n ? 'sin artículos Kaury' : 'sin respuesta')) };
+}
+
+// Dulce Camila: catálogo propio en PHP. Cada artículo lista sus talles; los colores con stock de cada talle salen de
+// actualizar_colores.php (lo mismo que usa la página al elegir un talle).
+export async function dulceShop(shop, CAT) {
+  const prods = {}, ent = {};
+  const list = shop.origin + (shop.listing || '/catalogo2024.php?id_marca=7&id_rubro=0&ptalle=todos&id_color=0');
+  const r = await get(list); if (!r.html) return { prods, ent, err: 'listado: ' + (r.status || r.err) };
+  const d = parse(r.html), jobs = [];
+  for (const f of d.querySelectorAll('form[action*="procesa_pedido.php?pcodigo="]')) {
+    const raw = (f.getAttribute('action').match(/pcodigo=([^&"]+)/) || [])[1], code = raw && digits(raw, CAT); if (!code || prods[code]) continue;
+    const tal = f.querySelectorAll('select[name="talle_prod"] option').map(o => o.getAttribute('value')).filter(Boolean);
+    prods[code] = list + '#banners-' + raw; ent[code] = {};
+    tal.forEach(t => jobs.push([code, raw, t]));
+  }
+  await pool(jobs, 2, async ([code, raw, t]) => {
+    await sleep(200 + Math.random() * 300);
+    const x = await get(`${shop.origin}/actualizar_colores.php?ptalle=${encodeURIComponent(t)}&pcodigo=${encodeURIComponent(raw)}`); if (!x.html) return;
+    for (const m of x.html.matchAll(/<option value="\d+">([^<]+)</g)) { const c = m[1].trim(); (ent[code][c] = ent[code][c] || []).includes(t) || ent[code][c].push(t); }
+  });
+  for (const c of Object.keys(ent)) if (!Object.keys(ent[c]).length) ent[c] = 0;
+  return { prods, ent, err: Object.keys(prods).length ? null : 'sin artículos' };
+}
+
+// Lencería PM: la grilla de la marca se pide por POST (productos-grilla.php, de a 16); en cada producto, los colores
+// con stock de cada talle salen de ajax/producto_colores.php.
+export async function pmShop(shop, CAT) {
+  const prods = {}, ent = {}, marca = shop.marca || 'KAUR', O = shop.origin, codes = new Set();
+  for (let ini = 0; ini < 640; ini += 16) {
+    const t = await post(O + '/productos-grilla.php', { colname_tipo_menu: 'marca', colname_categoria_raiz: '1', id_categoria_seleccionada: marca, colname_marca_default: marca, colname_referencia_default: '', colname_talle: '', colname_color: '', colname_marca: '', colname_orden: '', inicio: String(ini) });
+    if (!t) { if (!ini) return { prods, ent, err: 'listado' }; break; }
+    const n = codes.size; for (const m of t.matchAll(/producto\.php\?marca=\w+&(?:amp;)?codigo=(\w+)/g)) { const c = digits(m[1], CAT); if (c && m[1] === c) codes.add(c); }
+    if (codes.size === n && ini) break;
+    await sleep(250);
+  }
+  await pool([...codes], 2, async code => {
+    await sleep(250 + Math.random() * 300);
+    const url = `${O}/producto.php?marca=${marca}&codigo=${code}`, r = await get(url); if (!r.html) return;
+    const suc = (r.html.match(/id="suc_cod"[^>]*value="([^"]*)"/) || r.html.match(/value="([^"]*)"[^>]*id="suc_cod"/) || [])[1] || '1';
+    const tal = [...new Set([...r.html.matchAll(/id="talle_([^"]+)"[^>]*onclick="establecerTalle\('([^']+)'/g)].map(m => m[2]))];
+    prods[code] = url; const e = ent[code] = {};
+    for (const t of tal) {
+      const x = await post(O + '/ajax/producto_colores.php', { suc_cod: suc, cod_spro: code, marca_cod: marca, tal_cod: t }); if (!x) continue;
+      for (const m of x.matchAll(/class="color_disponible"[^>]*>([^<]+)</g)) { const c = m[1].trim(); (e[c] = e[c] || []).includes(t) || e[c].push(t); }
+      await sleep(150);
+    }
+  });
+  for (const c of Object.keys(ent)) if (!Object.keys(ent[c]).length) ent[c] = 0;
+  return { prods, ent, err: Object.keys(prods).length ? null : 'sin artículos' };
+}
+
+// Tiendas que publican los artículos sin informar stock (Pedix): se listan y quedan como "publicado, stock no confirmado".
+export async function listOnlyShop(shop, CAT) {
+  const L = await listProducts(shop, CAT);
+  return { prods: L.prods, ent: Object.fromEntries(Object.keys(L.prods).map(c => [c, '?'])), err: L.err };
 }
