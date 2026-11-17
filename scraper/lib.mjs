@@ -40,9 +40,9 @@ export async function pool(items, n, fn) {
 const BAD = /search|[?&]s=|\/page\/|cart|carrito|wishlist|login|cuenta|account|whatsapp|instagram|facebook|javascript:|mailto:|tel:|^#/i;
 const core = h => h.replace(/^(www|tienda|store|shop)\./, '');
 const CODE_RE = /(?:\b|(?<=\bkau?))\d{3,4}(?=k?\b)/gi;
-const KR = /kaury|kau\d|-kau|-kai|-kam|\bka\d|-ka\d|art-ka|\bp-?\d{2,3}-?ka\b/i;
-// Intimates: "P110", "P-31", "p110ka" (el número se valida contra la línea Intimates con pcode)
-const PCODE_RE = /(?<![a-z\d])p-?\d{2,3}(?=(?:ka?)?(?![a-z\d]))/gi;
+const KR = /kaury|kau\d|-kau|-kai|-kam|\bka\d|-ka\d|art-ka|\b[pm]-?\d{2,3}-?ka\b/i;
+// Intimates "P110", "P-31", "p110ka" y Summer "M650" (el número se valida contra su línea con pcode)
+const PCODE_RE = /(?<![a-z\d])[pm]-?\d{2,3}(?=(?:ka?)?(?![a-z\d]))/gi;
 
 /** Recorre los listados de una tienda y devuelve {codigo: url} de los artículos Kaury del catálogo. */
 export async function listProducts(shop, CAT) {
@@ -358,8 +358,9 @@ async function post(url, params, { timeout = 20000 } = {}) {
     return r.ok ? await r.text() : null;
   } catch { return null; }
 }
-/** "P110", "P-31", "P110KA": código de Intimates como sale de fábrica (P + número). Solo vale si ese número es de Intimates. */
-export const pcode = (c, CAT) => { const m = String(c).match(/^p-?0*(\d{2,3})(?![\d])/i); return m && CAT.int && CAT.int.has(m[1]) ? m[1] : null; };
+/** Códigos como salen de fábrica: "P110"/"P110KA" = art. 110 de Intimates, "M650" = art. 650 de Summer.
+ *  Solo valen si ese número es de esa línea (CAT.int / CAT.sum, armados en run.mjs). */
+export const pcode = (c, CAT) => { const m = String(c).match(/^([pm])-?0*(\d{2,3})(?![\d])/i); if (!m) return null; const L = m[1].toLowerCase() === 'p' ? CAT.int : CAT.sum; return L && L.has(m[2]) ? m[2] : null; };
 const digits = (c, CAT) => { const m = String(c).match(/^\d{2,4}/); if (m && CAT.has(m[0].replace(/^0+(?=\d{2})/, ''))) return m[0].replace(/^0+(?=\d{2})/, ''); return pcode(c, CAT); };
 
 // VTEX (Coppel): catálogo público en JSON con stock por talle. Cada color es un producto aparte, así que el botón lleva

@@ -18,6 +18,8 @@ const [shops, catalog, sizes, stores] = await Promise.all([json('shops.json'), j
 const CAT = new Set(catalog.map(r => r[0]));
 // Intimates sale de fábrica como "P" + número (P110 = art. 110 de Intimates): se acepta la P solo para esos números.
 CAT.int = new Set(catalog.filter(r => r[2] === 'intimates').map(r => r[0]));
+// Summer (mallas) sale de fábrica como "M" + número (M650 = art. 650 de Summer): igual, solo para esos números.
+CAT.sum = new Set(catalog.filter(r => r[2] === 'summer').map(r => r[0]));
 const normalize = makeNormalizer(catalog, sizes);
 
 let prev = null;

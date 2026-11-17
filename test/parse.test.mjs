@@ -174,5 +174,10 @@ console.log('OK');
   const d = await dulceShop({ origin: 'https://d.test' }, C);
   globalThis.fetch = orig;
   assert.deepEqual(Object.keys(d.prods), ['110']); assert.deepEqual(d.ent['110'], { SURTIDO: ['2'] });
-  console.log('ok: códigos P de Intimates');
+  C.sum = new Set(['650']); C.add('650');
+  assert.equal(pcode('M650', C), '650'); assert.equal(pcode('m-650ka', C), '650'); assert.equal(pcode('M110', C), null); assert.equal(pcode('P650', C), null);
+  globalThis.fetch = async () => new Response('<a href="https://p.test/productos/malla-entera-m650/">Malla entera M650</a><a href="https://p.test/productos/talle-m-100/">Bombacha talle M 100</a>', { status: 200 });
+  const ms = await listProducts({ origin: 'https://p.test', listings: ['/marca/kaury/'] }, C); globalThis.fetch = orig;
+  assert.deepEqual(Object.keys(ms.prods), ['650']);
+  console.log('ok: códigos P de Intimates y M de Summer');
 }
