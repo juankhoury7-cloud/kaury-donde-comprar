@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-o1epb2FCP49h/Ew4Bbe2bbElFeukGYSBYWBQ6T8zDzc=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-hPwrxeMvmaQxvL4WVg2G8OrwjPbInqnuIk9E+o4Zalg=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: https:; connect-src 'self' https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
 <title>Kaury · Panel de datos</title>
@@ -519,7 +519,9 @@ STORES.forEach(function(s){s.minAmt0=s.minAmt;s.minTxt0=s.minTxt;});
 /* Solo se muestran los locales con tienda web. MO: compra mínima actualizada por el chequeo diario de cada web mayorista. */
 var MO={};function hostOf(u){try{return new URL(u).host;}catch(e){return ;}}
 /* Cada local junta lo que vende por unidad (min) y por mayor (may): el mapa los muestra todos, rojo = por unidad, negro = solo por mayor. */
-function chOf(s,m){var k=m==="may"?s.wk:s.rk,web=m==="may"?(s.wweb||""):s.rweb;if(!k&&!web)return null;var sk=k.replace(/^www\./,""),pm=PRODS[k]||{},stk=STOCK[sk]||{};
+/* DOWN: tiendas que fallaron en la última revisión del robot: no se muestran hasta que se vuelvan a leer bien. */
+var DOWN={};
+function chOf(s,m){var k=m==="may"?s.wk:s.rk,web=m==="may"?(s.wweb||""):s.rweb;if(!k&&!web)return null;if(k&&DOWN[k])return null;var sk=k.replace(/^www\./,""),pm=PRODS[k]||{},stk=STOCK[sk]||{};
   return {m:m,prod:k?pm:{},stk:k?stk:{},vars:k?(VARS[sk]||{}):{},web:web,vset:new Set(k?Object.keys(stk).filter(function(c){return pm[c];}):[])};}
 function mergeEnt(a,b){if(!a)return b;if(!b)return a;if(a==="?")return b;if(b==="?")return a;var o={};[a,b].forEach(function(e){Object.keys(e).forEach(function(c){var z=o[c]||(o[c]=[]);e[c].forEach(function(x){if(z.indexOf(x)<0)z.push(x);});});});return o;}
 function bindMode(){STORES.forEach(function(s){var chs=[],c;if(s.inMin&&(c=chOf(s,"min")))chs.push(c);if(s.inMay&&(c=chOf(s,"may")))chs.push(c);
@@ -1015,7 +1017,7 @@ function fmtAt(ts){var d=new Date(ts);return d.toLocaleDateString("es-AR",{day:"
 function updLabel(){var el=$("upd");if(!lastStockTs){el.hidden=true;return;}el.hidden=false;var old=Date.now()-lastStockTs>3*3600e3;el.className="upd"+(old?" old":"");el.innerHTML='<i></i><span class="ut">Stock </span>'+ago(lastStockTs);el.title="Stock leído de cada tienda el "+fmtAt(lastStockTs);}
 var loadedAt={};
 function applyStock(d){if(!d||!d.prods||!d.stock||!d.ts)return;var mk=d.m||"all";if(loadedAt[mk]===d.ts){updLabel();return;}loadedAt[mk]=d.ts;lastStockTs=Math.max(lastStockTs||0,d.ts);
-  Object.assign(PRODS,d.prods);Object.assign(STOCK,d.stock);Object.assign(VARS,d.vars||{});if(d.mo)MO=d.mo;if(d.status&&mk==="all")STATUS=d.status;STOCKAT=fmtAt(d.ts);stockCache={};
+  Object.assign(PRODS,d.prods);Object.assign(STOCK,d.stock);Object.assign(VARS,d.vars||{});if(d.mo)MO=d.mo;STORES.forEach(function(s){if(mk!=="may"&&s.rk)delete DOWN[s.rk];if(mk!=="min"&&s.wk)delete DOWN[s.wk];});(d.down||[]).forEach(function(k){DOWN[k]=1;});if(d.status&&mk==="all")STATUS=d.status;STOCKAT=fmtAt(d.ts);stockCache={};
   bindMode();
   [].forEach.call(document.querySelectorAll(".stAt"),function(e){e.textContent=STOCKAT;});
   updLabel();renderTop();var keep=st.sel;render(false);if(keep&&st.sel===keep)select(keep);if(!$("view-datos").hidden)drawData();}

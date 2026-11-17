@@ -40,12 +40,15 @@ await pool(Object.entries(shops), 13, async ([key, shop]) => {
   const pProds = (prev.prods || {})[key] || {}, pStock = (prev.stock || {})[sk] || {}, pVars = (prev.vars || {})[sk] || {};
   const status = { ok: true };
   const may = shop.canal === 'may';
-  // mayoristas: su stock se revisa una vez por hora (junto con los listados); en las otras pasadas se mantiene
-  if (may && !relist) { out.prods[key] = pProds; out.stock[sk] = pStock; out.vars[sk] = pVars; out.status[key] = { ...((prev.status || {})[key] || { ok: true }), may: true }; return; }
+  // mayoristas: su stock se revisa una vez por hora (junto con los listados); en las otras pasadas se mantiene.
+  // Si en la última revisión fallaron, se reintentan en cada pasada (cada 5 minutos) para que vuelvan al mapa apenas se arreglen.
+  const wasDown = ((prev.status || {})[key] || {}).ok === false;
+  if (may && !relist && !wasDown) { out.prods[key] = pProds; out.stock[sk] = pStock; out.vars[sk] = pVars; out.status[key] = { ...((prev.status || {})[key] || { ok: true }), may: true }; return; }
   // tiendas que publican sus datos en un servicio (Kaury MDP): artículos y stock salen de ahí, sin leer páginas
   if (shop.api) {
     const A = await apiShop(shop, CAT);
-    if (A.err) { out.prods[key] = pProds; out.stock[sk] = pStock; out.vars[sk] = pVars; out.status[key] = { ok: !!Object.keys(pProds).length, err: 'datos: ' + A.err }; return; }
+    // si falla, la tienda sale del mapa hasta la próxima revisión buena (no se muestra stock viejo)
+    if (A.err) { out.prods[key] = pProds; out.stock[sk] = {}; out.vars[sk] = {}; out.status[key] = { ok: false, err: 'datos: ' + A.err, arts: 0, conStock: 0, errores: 0, seg: Math.round((Date.now() - t0) / 1000) }; return; }
     const stock = {}; for (const [c, e] of Object.entries(A.ent)) if (e) stock[c] = normalize(c, e);
     out.prods[key] = A.prods; out.stock[sk] = stock; out.vars[sk] = {};
     out.status[key] = { ok: true, arts: Object.keys(A.prods).length, conStock: Object.keys(stock).length, errores: 0, seg: Math.round((Date.now() - t0) / 1000) };
@@ -70,18 +73,21 @@ await pool(Object.entries(shops), 13, async ([key, shop]) => {
   const res = await pool(codes, 2, async c => {
     await sleep(200 + Math.random() * 300);
     let s = await readStock(prods[c]);
-    if (s === 'E') { errs++; return { ent: c in pStock ? pStock[c] : (c in pProds ? 0 : '?'), vars: pVars[c] || null }; }
+    // la página de ese artículo no respondió: el artículo no se muestra en esta pasada (nada de stock viejo)
+    if (s === 'E') { errs++; return { ent: 0, vars: null }; }
     return { ent: normalize(c, s.ent), vars: normalize.vars(c, s.vars), price: s.price || null };
   });
   const stock = {}, vars = {};
   codes.forEach((c, i) => { if (res[i].ent !== 0) { stock[c] = res[i].ent; if (res[i].vars) vars[c] = res[i].vars; } if (res[i].price) (px[sk] = px[sk] || {})[c] = res[i].price; });
-  if (codes.length && errs === codes.length) { status.ok = false; status.err = (status.err ? status.err + '; ' : '') + 'no respondió ninguna página de artículo'; out.stock[sk] = pStock; out.vars[sk] = pVars; }
+  if (codes.length && errs === codes.length) { status.ok = false; status.err = (status.err ? status.err + '; ' : '') + 'no respondió ninguna página de artículo'; out.stock[sk] = {}; out.vars[sk] = {}; }
   else { out.stock[sk] = stock; out.vars[sk] = vars; }
   out.prods[key] = prods;
   Object.assign(status, { arts: codes.length, conStock: Object.keys(out.stock[sk]).length, errores: errs, seg: Math.round((Date.now() - t0) / 1000) });
   out.status[key] = status;
 });
 
+// tiendas que fallaron en esta revisión: el mapa las oculta hasta que vuelvan a leerse bien
+out.down = Object.keys(out.status).filter(k => out.status[k].ok === false);
 const keys = Object.keys(out.status), base = keys.filter(k => shops[k].canal !== 'may'), okN = base.filter(k => out.status[k].ok).length;
 for (const k of keys) { const s = out.status[k]; if (s.may && !relist) continue; console.log((s.ok ? 'OK ' : 'ERR') + ' ' + k.padEnd(40) + ` ${s.conStock}/${s.arts} con stock · ${s.errores} errores · ${s.seg}s` + (s.err ? ' · ' + s.err : '') + (s.warn ? ' · ' + s.warn : '')); }
 console.log(`${okN}/${base.length} tiendas minoristas OK · ${keys.filter(k => shops[k].canal === 'may' && out.status[k].ok).length}/${keys.length - base.length} mayoristas OK` + (Object.keys(lastErr).length ? ' · errores de páginas por código: ' + JSON.stringify(lastErr) : ''));
