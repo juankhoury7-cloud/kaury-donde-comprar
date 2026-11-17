@@ -16,7 +16,7 @@ al artículo en la tienda, con el color y talle que hay en stock.
 | `site/` | Cloudflare Pages | Página ya armada. Se regenera con `npm run build`. |
 | D1 | Cloudflare | Base de datos `DB`: tablas `kv` (stock) y `ev` (eventos). Se crean solas. |
 
-El mapa pide el stock al abrir y cada 5 minutos. Si una tienda no responde, se mantiene su último dato bueno.
+El mapa pide el stock al abrir y cada 5 minutos. Si una tienda no responde, sale del mapa (lista `down`) hasta que la próxima revisión la lea bien; no se muestra stock viejo.
 
 **Chequeo diario de mayoristas** (`scraper/mins.mjs`, una vez cada 24 h dentro de la misma corrida): lee la página principal y las de "cómo comprar" / preguntas frecuentes de cada web mayorista, busca la compra mínima publicada y la compara con la de `data/stores.json`. Si encuentra un único monto distinto lo aplica en el mapa (desde la segunda lectura igual); si es promo (Cyber, Black Friday, "hasta el…") la marca y vuelve sola al valor de siempre cuando desaparece; lo dudoso queda en el panel para revisar. También compara la mediana de los precios de los artículos Kaury de cada tienda con el día anterior y avisa si se movió 15 % o más. El resultado se guarda en `kv('mins')` (no viaja a los visitantes; el mapa solo recibe los montos actualizados en `mo`) y se ve en el panel. Solo se muestran en el mapa los locales con tienda web.
 
@@ -44,7 +44,7 @@ Prueba local: `npm test` · `OUT=out.json node scraper/run.mjs` (no sube nada si
 | Dónde | Límite |
 |---|---|
 | `/api/stock` | Se guarda 30 s en memoria (no lee la base en cada visita) · 30 pedidos/min por IP |
-| `/api/ev` | Solo desde la propia página (Origin) · 6 envíos y 60 eventos/min por IP · 400/día por IP · tope global `MAX_EV_DAY` (5.000/día por defecto) · eventos de más de 13 meses se borran solos |
+| `/api/ev` | Solo desde la propia página (Origin) · 6 envíos y 60 eventos/min por IP · 500/día por IP (contado en la base) · mismo evento repetido en 30 min se descarta · tope global `MAX_EV_DAY` (5.000/día por defecto) · eventos de más de 13 meses se borran solos |
 | `/api/admin/events` | 8 contraseñas erróneas en 15 min → bloqueo 15 min · 20 pedidos/min · hasta 20.000 eventos por consulta |
 | `/api/ingest` | Clave secreta · 6 pedidos/min |
 | Navegador | Pide stock cada ~5 min solo con la pestaña visible, sin pedidos superpuestos · una búsqueda cuenta recién cuando se dejan de tocar filtros 3 s · eventos en lotes cada 20 s · máx. 40 eventos por visita |
