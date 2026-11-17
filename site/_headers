@@ -1,10 +1,12 @@
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: frame-ancestors 'self' https://www.kaury.com https://kaury.com
   Strict-Transport-Security: max-age=31536000
   Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=()
   Cross-Origin-Opener-Policy: same-origin-allow-popups
 /panel/*
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store
