@@ -144,6 +144,7 @@ a{color:inherit}
 .sg:hover,.sg.on{background:var(--bg)}
 .sg .n{font-weight:800;font-size:16px;min-width:46px}
 .sg .t{font-size:13.5px;color:var(--ink2);flex:1;min-width:0}
+.sg .ln,#art .ln{display:block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .sg .sw{display:flex;gap:3px;margin-top:4px}
 .dot{width:11px;height:11px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);display:inline-block;flex:0 0 auto}
 
@@ -530,7 +531,7 @@ function bindMode(){STORES.forEach(function(s){var chs=[],c;if(s.inMin&&(c=chOf(
   s.web=(chs[0]&&chs[0].web)||(chs[1]&&chs[1].web)||"";s.on=(s.inMin||s.inMay)&&!!s.web;});
   stockCache={};}
 function minLabel(s){return s.minAmt===0?"Sin compra mínima"+(s.minTmp?" (promo)":""):s.minAmt?"Compra mínima "+(s.minTxt||("$"+s.minAmt.toLocaleString("es-AR"))):(s.minTxt&&s.minTxt!=="Consultá condiciones"?"Compra mínima: "+s.minTxt:"Consultá la compra mínima");}
-var CAT=CAT_RAW.map(function(r){return {code:r[0],name:r[1],line:r[2],colors:r[3].split("|").map(function(c){var k=c.lastIndexOf(":");return {n:c.slice(0,k)||"Único",h:c.slice(k+1)};})};});
+var CAT=CAT_RAW.map(function(r){return {code:r[0],name:r[1],line:r[2],sub:r[4]||"",colors:r[3].split("|").map(function(c){var k=c.lastIndexOf(":");return {n:c.slice(0,k)||"Único",h:c.slice(k+1)};})};});
 var ART={};CAT.forEach(function(a){ART[a.code]=a;});
 /* Talles de referencia por tipo de prenda (en la versión real salen del catálogo de cada artículo). */
 function sizesFor(a){if(SIZES[a.code])return SIZES[a.code].slice();var n=a.name.toLowerCase();
@@ -539,7 +540,9 @@ function sizesFor(a){if(SIZES[a.code])return SIZES[a.code].slice();var n=a.name.
   if(/conjunto|corpiño/.test(n)&&a.line!=="summer")return ["85","90","95","100","105"];
   return ["1","2","3","4"];}
 CAT.forEach(function(a){a.sizes=sizesFor(a);});
-var LINE={kaury:"Kaury",intimates:"Intimates",summer:"Summer"};
+var LINE={kaury:"Kaury",intimates:"Intimates",summer:"Summer",cauri:"Cauri"};
+/* Línea y sublínea como en kaury.com (Kaury · Essentials, Intimates · Medias, Cauri...). */
+function lineOf(a){return (LINE[a.line]||a.line)+(a.sub?" · "+a.sub:"");}
 var FEATURED=["4030","8199","4000","8185","8216","4790","8165","7020","8227","156","159","8130","8240","162","650","8261"];
 var POP={};FEATURED.forEach(function(c,i){POP[c]=1-i*0.03;});
 function h(str){var x=2166136261;for(var i=0;i<str.length;i++){x^=str.charCodeAt(i);x=Math.imul(x,16777619);}return (x>>>0)/4294967295;}
@@ -600,10 +603,12 @@ function swRow(a,max){return a.colors.slice(0,max||8).map(function(c){return '<s
 function suggest(){
   var v=q.value.trim().toLowerCase().replace(/^art\.?\s*/,"");
   if(!v){sugg.hidden=true;return;}
-  sList=CAT.filter(function(a){return a.code.toLowerCase().indexOf(v)===0||a.name.toLowerCase().indexOf(v)>=0;})
-   .sort(function(x,y){var ax=x.code.toLowerCase().indexOf(v)===0?0:1,ay=y.code.toLowerCase().indexOf(v)===0?0:1;return ax-ay||(POP[y.code]||0)-(POP[x.code]||0);}).slice(0,8);
+  /* También se busca por línea: "cauri", "essentials", "summer season", "medias"... muestra toda la línea. */
+  var byLine=v.length>=3&&CAT.some(function(a){return lineOf(a).toLowerCase().indexOf(v)>=0;});
+  sList=CAT.filter(function(a){return a.code.toLowerCase().indexOf(v)===0||a.name.toLowerCase().indexOf(v)>=0||(byLine&&lineOf(a).toLowerCase().indexOf(v)>=0);})
+   .sort(function(x,y){var ax=x.code.toLowerCase().indexOf(v)===0?0:1,ay=y.code.toLowerCase().indexOf(v)===0?0:1;return ax-ay||(POP[y.code]||0)-(POP[x.code]||0);}).slice(0,byLine?80:8);
   sIdx=sList.length?0:-1;
-  sugg.innerHTML=sList.length?sList.map(function(a,i){return '<div class="sg'+(i===sIdx?" on":"")+'" role="option" data-c="'+esc(a.code)+'"><span class="n">'+esc(a.code)+'</span><span class="t">'+esc(a.name)+'<span class="sw">'+swRow(a)+'</span></span></div>';}).join("")
+  sugg.innerHTML=sList.length?sList.map(function(a,i){return '<div class="sg'+(i===sIdx?" on":"")+'" role="option" data-c="'+esc(a.code)+'"><span class="n">'+esc(a.code)+'</span><span class="t"><span class="ln">'+esc(lineOf(a))+'</span>'+esc(a.name)+'<span class="sw">'+swRow(a)+'</span></span></div>';}).join("")
     :'<div class="sg" style="cursor:default"><span class="t" style="color:var(--muted)">No hay ningún artículo “'+esc(q.value)+'”. Probá con el número, por ejemplo 4030.</span></div>';
   sugg.hidden=false;
 }
@@ -627,7 +632,7 @@ function pick(code){st.code=code;st.colors=[];st.sizes=[];st.sel="";q.value="";s
 function renderTop0(){
   var a=st.code?ART[st.code]:null,art=$("art"),strip=$("strip"),strip2=$("strip2");strip2.hidden=true;
   q.hidden=!!a;art.hidden=!a;$("clearBtn").hidden=!a;$("shareBtn").hidden=!a;
-  if(a){art.innerHTML='<b>'+esc(a.code)+'</b><span>'+esc(a.name)+'</span>';
+  if(a){art.innerHTML='<b>'+esc(a.code)+'</b><span>'+esc(a.name)+'<small class="ln">'+esc(lineOf(a))+'</small></span>';
     strip.setAttribute("aria-label","Colores del "+a.code+" (podés elegir varios)");
     strip.innerHTML='<button type="button" class="chip plain" data-n="" aria-pressed="'+(!st.colors.length)+'">Todos los colores</button>'+colorsFor(a).map(function(c){return '<button type="button" class="chip" data-n="'+esc(c.n)+'" aria-pressed="'+(st.colors.indexOf(c.n)>=0)+'"><span class="dot" style="background:'+c.h+'"></span>'+esc(c.n)+'</button>';}).join("");
     strip2.hidden=a.sizes.length<2;
