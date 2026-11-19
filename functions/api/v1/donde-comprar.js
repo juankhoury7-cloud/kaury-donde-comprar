@@ -7,7 +7,8 @@ import { corsHeaders } from '../../../lib/cors.js';
 let body = null, at = 0;
 export async function onRequestOptions({ request }) { return new Response(null, { status: 204, headers: corsHeaders(request) }); }
 export async function onRequestGet({ request, env }) {
-  const cors = corsHeaders(request);
+  // Vary: Origin siempre, para que el navegador no reutilice una respuesta pedida desde otra web.
+  const cors = { Vary: 'Origin', ...corsHeaders(request) };
   if (!allow('v1:' + ipOf(request), 30, 60e3)) return tooMany();
   try {
     if (!body || Date.now() - at > 30e3) {
