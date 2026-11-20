@@ -500,12 +500,6 @@
   "codeRe": "kaury-art-(\\d{3,4})(?!\\d)",
   "slow": true
  },
- "coppel.com.ar": {
-  "name": "coppel",
-  "origin": "https://www.coppel.com.ar",
-  "kind": "vtex",
-  "ft": "kaury"
- },
  "domenica.com.ar": {
   "name": "domenica",
   "origin": "https://domenica.com.ar",
