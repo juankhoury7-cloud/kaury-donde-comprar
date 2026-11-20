@@ -90,6 +90,7 @@ await pool(Object.entries(shops), 13, async ([key, shop]) => {
   if (failed.length && failed.length < codes.length) {
     await sleep(2000);
     for (const i of failed.slice(0, 40)) {
+      if (Date.now() - t0 > 90e3) break; // tope: una tienda lenta no demora toda la revisión
       await sleep(700 + Math.random() * 500);
       const s = await readStock(prods[codes[i]]);
       if (s !== 'E') res[i] = { ent: normalize(codes[i], s.ent), vars: normalize.vars(codes[i], s.vars), price: s.price || null };
