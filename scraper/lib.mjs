@@ -461,6 +461,37 @@ export async function pmShop(shop, CAT) {
   return { prods, ent, err: Object.keys(prods).length ? null : 'sin artículos' };
 }
 
+// Eben Ezer (web propia): las marcas se listan por su API (products?brandId=..., de a 50) y cada producto trae sus
+// variantes (color/talle) con el stock por depósito; se cuenta solo el depósito de la tienda online (shop.deposito),
+// que es el que muestra la web ("Últimas 5", "Sin stock"). shop.colorMap traduce sus abreviaturas (BCO, FUX, RSA VINT).
+export async function ebenShop(shop, CAT) {
+  const O = shop.origin, prods = {}, ent = {}, slugs = new Map(), cm = shop.colorMap || {};
+  for (const b of shop.brands || []) for (let p = 1; p <= 10; p++) {
+    const r = await get(`${O}/main/api/products?page=${p}&limit=50&search=&brandId=${b}`);
+    if (!r.html) { if (p === 1 && !slugs.size) return { prods, ent, err: 'listado: ' + (r.status || r.err) }; break; }
+    let j; try { j = JSON.parse(r.html); } catch { break; }
+    const list = j.products || [];
+    for (const x of list) { const m = String(x.nombre || '').trim().match(/(\d{2,4})$/), c = m && nc(m[1]); if (c && CAT.has(c) && x.slug && !slugs.has(c)) slugs.set(c, x.slug); }
+    if (list.length < 50 || p * 50 >= (j.total || 0)) break;
+    await sleep(200);
+  }
+  await pool([...slugs], 2, async ([c, slug]) => {
+    await sleep(200 + Math.random() * 300);
+    const r = await get(`${O}/main/api/ficha-producto?slug=${encodeURIComponent(slug)}`); if (!r.html) return;
+    let j; try { j = JSON.parse(r.html); } catch { return; }
+    prods[c] = `${O}/productos/${slug}`; const e = ent[c] = {};
+    for (const v of j.variants || []) {
+      const st = v.stock || {}, n = shop.deposito ? +st[shop.deposito] || 0 : Object.values(st).reduce((a, x) => a + (+x || 0), 0);
+      if (n <= 0) continue;
+      const a = Object.fromEntries((v.attributes || []).map(x => [String(x.name).toLowerCase(), String(x.value).trim()]));
+      const raw = (a.color || '-').toUpperCase(), col = cm[raw] || a.color || '-', tal = (a.talle || 'u').replace(/^unico$/i, 'u');
+      (e[col] = e[col] || []).includes(tal) || e[col].push(tal);
+    }
+  });
+  for (const c of Object.keys(ent)) if (!Object.keys(ent[c]).length) ent[c] = 0;
+  return { prods, ent, err: Object.keys(prods).length ? null : 'sin artículos' };
+}
+
 // Tiendas que publican los artículos sin informar stock (Pedix): se listan y quedan como "publicado, stock no confirmado".
 export async function listOnlyShop(shop, CAT) {
   const L = await listProducts(shop, CAT);

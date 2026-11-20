@@ -4,8 +4,8 @@
 //   FULL=1        fuerza a revisar de nuevo qué artículos tiene cada tienda (si no, se hace 1 vez por hora)
 //   OUT           archivo donde guardar el resultado (opcional)
 import { readFile, writeFile } from 'node:fs/promises';
-import { listProducts, readStock, makeNormalizer, pool, sleep, lastErr, apiShop, vtexShop, dulceShop, pmShop, listOnlyShop } from './lib.mjs';
-const KINDS = { vtex: vtexShop, dulcecamila: dulceShop, pm: pmShop, listonly: listOnlyShop };
+import { listProducts, readStock, makeNormalizer, pool, sleep, lastErr, apiShop, vtexShop, dulceShop, pmShop, listOnlyShop, ebenShop } from './lib.mjs';
+const KINDS = { vtex: vtexShop, dulcecamila: dulceShop, pm: pmShop, listonly: listOnlyShop, eben: ebenShop };
 import { checkMins, priceMoves } from './mins.mjs';
 
 const here = p => new URL('../data/' + p, import.meta.url);
@@ -50,7 +50,7 @@ await pool(Object.entries(shops), 13, async ([key, shop]) => {
   const wasDown = ((prev.status || {})[key] || {}).ok === false;
   if (may && !relist && !wasDown) { out.prods[key] = pProds; out.stock[sk] = pStock; out.vars[sk] = pVars; out.status[key] = { ...((prev.status || {})[key] || { ok: true }), may: true }; return; }
   // tiendas que publican sus datos en un servicio (Kaury MDP) o con lector propio (shops.json "kind": Coppel, Dulce Camila,
-  // Lencería PM, Pedix): artículos y stock salen de ahí directamente
+  // Lencería PM, Pedix, Eben Ezer): artículos y stock salen de ahí directamente
   if (shop.api || KINDS[shop.kind]) {
     const A = shop.api ? await apiShop(shop, CAT) : await KINDS[shop.kind](shop, CAT, catalog);
     // si falla, la tienda sale del mapa hasta la próxima revisión buena (no se muestra stock viejo)

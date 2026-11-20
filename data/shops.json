@@ -585,5 +585,34 @@
    "/Products?manufacturerSelected=2060&pageSize=200"
   ],
   "codeRe": "/ProductDetail/KAU(\\d{2,4})(?![\\dA-Z])"
+ },
+ "lenceriaebenezer.shop": {
+  "name": "ebenezer",
+  "origin": "https://lenceriaebenezer.shop",
+  "kind": "eben",
+  "brands": [
+   "tcMXYdxNzxznK3p5W0ii",
+   "SCMqGJZynOTmluVttVBv"
+  ],
+  "deposito": "ATSLsXLTBxr79yQqtWNj",
+  "colorMap": {
+   "FUX": "Fucsia flúo",
+   "FUX FLUOR": "Fucsia flúo",
+   "BCO": "Blanco",
+   "NGR": "Negro",
+   "RSA VINT": "Rosa vintage",
+   "ROSA VINT": "Rosa vintage",
+   "ROSA VINTANGE": "Rosa vintage",
+   "GRS HUMO": "Gris humo",
+   "GRIS MELG": "Gris melange",
+   "GRIS/FUX": "Gris - fucsia",
+   "NEGRO/FUXIA": "Negro - fucsia",
+   "ROSA/BLANCO": "Rosa - blanco",
+   "NEGRO/NUDE": "Negro - nude",
+   "VIS": "Visón",
+   "BORRAV": "Borravino",
+   "VERDE ING": "Verde inglés",
+   "AMARILLO FLUOR": "Amarillo flúo"
+  }
  }
 }
