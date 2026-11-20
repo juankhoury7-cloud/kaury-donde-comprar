@@ -76,8 +76,9 @@ await pool(Object.entries(shops), 13, async ([key, shop]) => {
   }
   const codes = Object.keys(prods);
   let errs = 0;
-  const res = await pool(codes, 2, async c => {
-    await sleep(200 + Math.random() * 300);
+  // shop.slow: tiendas que bloquean si se les pide rápido (403/429): de a una página y con más pausa
+  const res = await pool(codes, shop.slow ? 1 : 2, async c => {
+    await sleep(shop.slow ? 900 + Math.random() * 500 : 200 + Math.random() * 300);
     let s = await readStock(prods[c]);
     // la página de ese artículo no respondió: el artículo no se muestra en esta pasada (nada de stock viejo)
     if (s === 'E') { errs++; return { ent: 0, vars: null }; }

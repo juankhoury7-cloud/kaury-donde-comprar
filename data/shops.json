@@ -94,7 +94,8 @@
   "origin": "https://www.lizalenceria.com",
   "listings": [
    "/page/{p}/?s=kaury&post_type=product"
-  ]
+  ],
+  "slow": true
  },
  "lenceriazoeyamal.mitiendanube.com": {
   "name": "lenceriazoeyamal",
@@ -497,7 +498,8 @@
   "listings": [
    "sitemap:/store-products-sitemap.xml"
   ],
-  "codeRe": "kaury-art-(\\d{3,4})(?!\\d)"
+  "codeRe": "kaury-art-(\\d{3,4})(?!\\d)",
+  "slow": true
  },
  "coppel.com.ar": {
   "name": "coppel",
