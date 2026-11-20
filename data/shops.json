@@ -298,7 +298,7 @@
   "name": "lenceriamayorista",
   "origin": "https://www.lenceriamayorista.com.ar",
   "listings": [
-   "/Products?manufacturerSelected=1753&pageNumber={p}"
+   "/Products?manufacturerSelected=1753&pageSize=200"
   ],
   "canal": "may",
   "codeRe": "/ProductDetail/KAU(\\d{3,4})(?![\\dA-Z])"
