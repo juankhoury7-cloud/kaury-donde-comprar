@@ -570,5 +570,12 @@
   ],
   "codeRe": "/producto/[^/]*-kau(\\d{2,4})/?$",
   "canal": "may"
+ },
+ "eresbsas.com": {
+  "name": "eres",
+  "origin": "https://eresbsas.com",
+  "listings": [
+   "/productos/?page={p}"
+  ]
  }
 }
