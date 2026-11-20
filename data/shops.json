@@ -577,5 +577,13 @@
   "listings": [
    "/productos/?page={p}"
   ]
+ },
+ "lenceriacasasol.com.ar": {
+  "name": "casasol",
+  "origin": "https://lenceriacasasol.com.ar",
+  "listings": [
+   "/Products?manufacturerSelected=2060&pageSize=200"
+  ],
+  "codeRe": "/ProductDetail/KAU(\\d{2,4})(?![\\dA-Z])"
  }
 }
