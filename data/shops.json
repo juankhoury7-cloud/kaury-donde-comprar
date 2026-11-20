@@ -94,8 +94,7 @@
   "origin": "https://www.lizalenceria.com",
   "listings": [
    "/page/{p}/?s=kaury&post_type=product"
-  ],
-  "slow": true
+  ]
  },
  "lenceriazoeyamal.mitiendanube.com": {
   "name": "lenceriazoeyamal",

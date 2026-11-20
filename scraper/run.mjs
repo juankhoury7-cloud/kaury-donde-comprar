@@ -79,11 +79,23 @@ await pool(Object.entries(shops), 13, async ([key, shop]) => {
   // shop.slow: tiendas que bloquean si se les pide rápido (403/429): de a una página y con más pausa
   const res = await pool(codes, shop.slow ? 1 : 2, async c => {
     await sleep(shop.slow ? 900 + Math.random() * 500 : 200 + Math.random() * 300);
-    let s = await readStock(prods[c]);
-    // la página de ese artículo no respondió: el artículo no se muestra en esta pasada (nada de stock viejo)
-    if (s === 'E') { errs++; return { ent: 0, vars: null }; }
+    const s = await readStock(prods[c]);
+    if (s === 'E') return 'E';
     return { ent: normalize(c, s.ent), vars: normalize.vars(c, s.vars), price: s.price || null };
   });
+  // Segunda oportunidad: las páginas que no respondieron se vuelven a pedir, de a una y con pausa
+  // (algunas tiendas rechazan pedidos al azar). Si tampoco responden, ese artículo no se muestra
+  // en esta pasada (nada de stock viejo).
+  const failed = codes.map((c, i) => (res[i] === 'E' ? i : -1)).filter(i => i >= 0);
+  if (failed.length && failed.length < codes.length) {
+    await sleep(2000);
+    for (const i of failed.slice(0, 40)) {
+      await sleep(700 + Math.random() * 500);
+      const s = await readStock(prods[codes[i]]);
+      if (s !== 'E') res[i] = { ent: normalize(codes[i], s.ent), vars: normalize.vars(codes[i], s.vars), price: s.price || null };
+    }
+  }
+  for (let i = 0; i < res.length; i++) if (res[i] === 'E') { errs++; res[i] = { ent: 0, vars: null }; }
   const stock = {}, vars = {};
   codes.forEach((c, i) => { if (res[i].ent !== 0) { stock[c] = res[i].ent; if (res[i].vars) vars[c] = res[i].vars; } if (res[i].price) (px[sk] = px[sk] || {})[c] = res[i].price; });
   if (codes.length && errs === codes.length) { status.ok = false; status.err = (status.err ? status.err + '; ' : '') + 'no respondió ninguna página de artículo'; out.stock[sk] = {}; out.vars[sk] = {}; }
