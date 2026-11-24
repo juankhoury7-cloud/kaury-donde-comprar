@@ -1,0 +1,45 @@
+{
+ "_nota": "Clientes que salen primero en la lista del buscador de kaury.com cuando tienen el artículo en el color y talle buscados. El orden de esta lista es el orden en que salen. No se muestra ninguna marca: solo cambia el orden. 'match' se compara con el nombre del local en stores.json (sin tildes ni mayúsculas).",
+ "clientes": [
+  {
+   "nombre": "Kaury MDP",
+   "match": "^kaury mdp"
+  },
+  {
+   "nombre": "Dulce Camila",
+   "match": "^dulce camila"
+  },
+  {
+   "nombre": "Tres Hermanos",
+   "match": "^tres hermanos"
+  },
+  {
+   "nombre": "Rey David",
+   "match": "rey david"
+  },
+  {
+   "nombre": "Frankie",
+   "match": "^frankie"
+  },
+  {
+   "nombre": "Eben Ezer",
+   "match": "^eben ezer"
+  },
+  {
+   "nombre": "Kaury Store",
+   "match": "^kaury store$"
+  },
+  {
+   "nombre": "Majilen",
+   "match": "majilen"
+  },
+  {
+   "nombre": "Hadas Mágicas",
+   "match": "^hadas magicas"
+  },
+  {
+   "nombre": "La Bomba-chita",
+   "match": "^la bomba-?chita"
+  }
+ ]
+}
