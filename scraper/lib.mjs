@@ -149,8 +149,17 @@ function pack(rows) { // rows: [color, talle, hayStock, sufijoLink] -> {ent:{col
   return { ent: Object.keys(m).length ? m : 0, vars };
 }
 function attr(d, name) { const el = d.querySelector('[' + name + ']'); return el ? el.getAttribute(name) : null; }
+// Tiendanube: las variantes del artículo están en la ficha (#single-product / .js-product-detail). Los demás
+// [data-variants] de la página son productos relacionados o sugeridos. Cuando la tienda da de baja un artículo,
+// la página responde 200 con "Error - 404" y solo trae sugeridos: en ese caso el artículo no está (no se toman
+// los talles de otro producto).
+const TN_ITEM = '.js-item-product, .js-product-item-private, .item-product';
 function tiendanube(d) {
-  const raw = attr(d, 'data-variants'); if (raw == null) return null;
+  const all = d.querySelectorAll('[data-variants]'); if (!all.length) return null;
+  const el = d.querySelector('#single-product[data-variants], #single-product-container[data-variants]') || d.querySelector('.js-product-detail[data-variants]')
+    || all.find(e => !e.closest(TN_ITEM));
+  if (!el) return 'gone';
+  const raw = el.getAttribute('data-variants'); if (raw == null) return null;
   let v; try { v = JSON.parse(unesc(raw)); } catch { try { v = JSON.parse(raw); } catch { return null; } }
   if (!Array.isArray(v) || !v.length) return null;
   const opts = [0, 1, 2].filter(i => v.some(x => x['option' + i] != null && x['option' + i] !== ''));
@@ -232,7 +241,7 @@ export async function readStock(url) {
   if (!r.html) { if (r.status === 404) return { ent: 0, vars: [] }; const k = r.status || r.err || '?'; lastErr[k] = (lastErr[k] || 0) + 1; return 'E'; }
   const h = r.html, d = parse(h), px = price(d, h);
   const done = o => (px ? Object.assign(o, { price: px }) : o);
-  let rows = tiendanube(d); if (rows) return done(pack(rows));
+  let rows = tiendanube(d); if (rows === 'gone') return { ent: 0, vars: [] }; if (rows) return done(pack(rows));
   rows = matrix(d); if (rows) return done(pack(rows));
   rows = woo(d); if (rows === 'ajax') return done({ ent: '?', vars: [] }); if (rows) return done(pack(rows));
   rows = empretienda(h); if (rows) return done(pack(rows.map(x => x.slice(0, 3))));

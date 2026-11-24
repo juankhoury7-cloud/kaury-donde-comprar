@@ -29,6 +29,10 @@ const pages = {
    <a href="https://wa.me/5491127039737">5491127039737</a></body></html>`,
   'https://a.test/productos/kaury-articulo-4030/': `<html><body><div id="single-product" data-variants="${enc(JSON.stringify(tnVariants))}" data-store="x"></div></body></html>`,
   'https://a.test/productos/kaury-articulo-8165/': `<html><body><form class="variations_form" data-product_variations="${enc(JSON.stringify(wooVar))}"></form></body></html>`,
+  // artículo dado de baja: Tiendanube responde 200 con "Error - 404" y solo productos sugeridos
+  'https://a.test/productos/kaury-articulo-8185/': `<html><body><h1>Error - 404</h1><div class="js-product-item-private product-item js-product-container js-item-product" data-variants="${enc(JSON.stringify(tnVariants))}"></div></body></html>`,
+  // ficha real con sugeridos abajo: se leen solo las variantes de la ficha
+  'https://a.test/productos/kaury-articulo-8214/': `<html><body><div class="js-item-product" data-variants="${enc(JSON.stringify([{ id: 9, stock: 5, available: true, option0: 'Coral', option1: 'XL' }]))}"></div><div id="single-product" class="js-product-detail" data-variants="${enc(JSON.stringify([{ id: 7, stock: 2, available: true, option0: 'Negro', option1: '85' }]))}"></div></body></html>`,
   'https://a.test/productos/emp/': `<html><body><script>var stock = ${JSON.stringify(empStock)};\n var otra = 1;</script></body></html>`,
 };
 globalThis.fetch = async (u) => { const h = pages[String(u)]; return h ? new Response(h, { status: 200 }) : new Response('no', { status: 404 }); };
@@ -51,6 +55,8 @@ const s3 = await readStock('https://a.test/productos/emp/');
 console.log('empretienda', s3.ent, N('8165', s3.ent), N.vars('8165', s3.vars));
 assert.equal(N.vars('8165', s3.vars), null);
 assert.equal((await readStock('https://a.test/nada/')).ent, 0);
+assert.deepEqual(await readStock('https://a.test/productos/kaury-articulo-8185/'), { ent: 0, vars: [] });
+assert.deepEqual((await readStock('https://a.test/productos/kaury-articulo-8214/')).ent, { negro: ['85'] });
 console.log('OK');
 // talle y color juntos en una sola opción, y talles escritos de formas raras
 {
