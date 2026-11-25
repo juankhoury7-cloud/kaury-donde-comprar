@@ -428,8 +428,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
   <div class="dwrap">
     <div class="dtop">
       <div><span class="priv">🔒 Panel privado · solo lo ves vos</span><h1>Panel de datos</h1><p>Qué busca el público en el mapa, a qué tiendas va, quiénes se registraron y cómo está el stock en la calle.</p></div>
-      <div class="dctl"><div class="seg" role="group" aria-label="Período" id="pDays"><button type="button" data-d="7" aria-pressed="false">7 días</button><button type="button" data-d="30" aria-pressed="true">30 días</button><button type="button" data-d="90" aria-pressed="false">90 días</button></div>
-        <div class="seg" role="group" aria-label="Origen de los datos"><button type="button" id="srcReal" aria-pressed="false">Datos reales</button><button type="button" id="srcDemo" aria-pressed="true">Ejemplo</button></div></div>
+      <div class="dctl"><div class="seg" role="group" aria-label="Período" id="pDays"><button type="button" data-d="7" aria-pressed="false">7 días</button><button type="button" data-d="30" aria-pressed="true">30 días</button><button type="button" data-d="90" aria-pressed="false">90 días</button></div></div>
     </div>
     <nav class="ptabs" id="ptabs" role="tablist"><button type="button" role="tab" data-pt="resumen" aria-selected="true">Resumen</button><button type="button" role="tab" data-pt="demanda" aria-selected="false">Demanda</button><button type="button" role="tab" data-pt="locales" aria-selected="false">Locales</button><button type="button" role="tab" data-pt="contactos" aria-selected="false">Contactos</button><button type="button" role="tab" data-pt="sistema" aria-selected="false">Sistema</button></nav>
     <p class="dnote" id="dnote"></p>
@@ -1030,25 +1029,10 @@ function pullStock(){if(pulling)return;pulling=true;fetch(API+"/stock",{cache:"n
 setInterval(function(){if(document.visibilityState!=="hidden"&&Date.now()-lastPull>4.5*60000){lastPull=Date.now();pullStock();}updLabel();},60000);
 var lastPull=Date.now()+Math.random()*30000;
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&Date.now()-lastStockTs>5*60000&&Date.now()-lastPull>60000){lastPull=Date.now();pullStock();}});
-var demoEvents=MODE!=="panel"?[]:(function(){
-  var out=[],now=Date.now(),seed=7;function rnd(){seed=(seed*1103515245+12345)&2147483647;return seed/2147483647;}
-  var pool=[];FEATURED.forEach(function(c,i){for(var k=0;k<Math.max(1,12-i);k++)pool.push(c);});
-  CAT.forEach(function(a){if(FEATURED.indexOf(a.code)<0&&rnd()<0.25)pool.push(a.code);});
-  var pw=STORES.map(function(s){return s.prov;});
-  for(var day=59;day>=0;day--){var n=16+Math.round(rnd()*16)+Math.round((59-day)*0.4);
-    for(var i=0;i<n;i++){var code=pool[Math.floor(rnd()*pool.length)],a=ART[code],prov=rnd()<0.35?pw[Math.floor(rnd()*pw.length)]:"",stock=stockFor(code);
-      var cols=[];if(rnd()<0.72){cols.push(a.colors[Math.floor(rnd()*a.colors.length)].n);if(rnd()<0.25){var c2=a.colors[Math.floor(rnd()*a.colors.length)].n;if(cols.indexOf(c2)<0)cols.push(c2);}}
-      var szs=[];if(a.sizes.length>1&&rnd()<0.68){var zi=Math.min(a.sizes.length-1,Math.floor(Math.pow(rnd(),0.8)*a.sizes.length*0.85));szs.push(a.sizes[zi]);if(rnd()<0.3&&zi+1<a.sizes.length)szs.push(a.sizes[zi+1]);}
-      var color=cols.join("+");
-      var hits=STORES.filter(function(s){return matchEnt(stock[s.id],cols,szs)&&(!prov||s.prov===prov);});
-      var ts=now-day*864e5-Math.floor(rnd()*864e5*0.9);var so=["instagram","instagram","instagram","google","google","whatsapp","directo","facebook","kaury"][Math.floor(rnd()*9)],sd="d"+day+"-"+i;out.push({t:"s",ts:ts,a:code,c:color,z:szs.join("+"),p:prov,r:hits.length,o:so,s:sd});
-      if(hits.length&&rnd()<0.47){hits.sort(function(x,y){return h(y.id+"w")-h(x.id+"w");});var s=hits[Math.min(hits.length-1,Math.floor(Math.pow(rnd(),2)*hits.length))];
-        out.push({t:"c",ts:ts+40000+Math.floor(rnd()*90000),a:code,c:color,z:szs.join("+"),st:s.i,p:s.prov,k:s.web?"web":(s.ig?"ig":"maps"),o:so,s:sd});}}}
-  return out;
-})();
+var demoEvents=[]; /* el panel muestra solo datos reales (sin datos de ejemplo) */
 
 /* ---------- vista datos (panel) ---------- */
-var pCanal="",PDAYS=30,PTAB="resumen",srcReal=false,realUsers=null,HIST=null,STATUS=null;
+var pCanal="",PDAYS=30,PTAB="resumen",srcReal=true,realUsers=null,HIST=null,STATUS=null;
 try{PTAB=sessionStorage.getItem("kaury_ptab")||"resumen";}catch(e){}
 $("pCanal").addEventListener("click",function(e){var b=e.target.closest("[data-pc]");if(!b)return;pCanal=b.getAttribute("data-pc");[].forEach.call(this.querySelectorAll("[data-pc]"),function(x){x.setAttribute("aria-pressed",String(x===b));});drawData();});
 $("pDays").addEventListener("click",function(e){var b=e.target.closest("[data-d]");if(!b)return;PDAYS=+b.getAttribute("data-d");[].forEach.call(this.querySelectorAll("[data-d]"),function(x){x.setAttribute("aria-pressed",String(x===b));});drawData();});
@@ -1057,8 +1041,6 @@ function showPTab(t){PTAB=t;try{sessionStorage.setItem("kaury_ptab",t);}catch(e)
   [].forEach.call(document.querySelectorAll("section.ptab"),function(s){s.hidden=s.getAttribute("data-pt")!==t;});
   if(t==="locales"&&srcReal&&!HIST)loadHist();drawData();}
 $("ptabs").addEventListener("click",function(e){var b=e.target.closest("[data-pt]");if(b)showPTab(b.getAttribute("data-pt"));});
-$("srcReal").addEventListener("click",function(){srcReal=true;this.setAttribute("aria-pressed","true");$("srcDemo").setAttribute("aria-pressed","false");loadReal();drawData();});
-$("srcDemo").addEventListener("click",function(){srcReal=false;this.setAttribute("aria-pressed","true");$("srcReal").setAttribute("aria-pressed","false");drawData();});
 function authGet(path){return fetch(API+path,{headers:{"Authorization":"Bearer "+encodeURIComponent(PASS)},cache:"no-store"}).then(function(r){if(!r.ok)throw r.status;return r.json();});}
 function loadUsers(){authGet("/admin/users?format=json").then(function(d){realUsers=d.users||[];drawData();}).catch(function(){realUsers=realUsers||[];});}
 function loadHist(){HIST={};authGet("/admin/hist").then(function(d){HIST=d||{};drawData();}).catch(function(){HIST={};});}
@@ -1300,7 +1282,7 @@ if(MODE==="panel"){$("login").addEventListener("submit",function(e){e.preventDef
   fetch(API+"/admin/events?days=1",{headers:{"Authorization":"Bearer "+encodeURIComponent(v)},cache:"no-store"}).then(function(r){if(r.status===401){$("lerr").textContent="Contraseña incorrecta.";return;}if(r.status===429){$("lerr").textContent="Demasiados intentos. Esperá 15 minutos.";return;}if(r.status===503){$("lerr").textContent="Falta configurar la contraseña del panel en Cloudflare.";return;}if(!r.ok){$("lerr").textContent="No se pudo conectar. Probá de nuevo.";return;}
    PASS=v;try{sessionStorage.setItem("kaury_panel",v);}catch(x){}$("login").hidden=true;enterPanel();},function(){$("lerr").textContent="No se pudo conectar. Probá de nuevo.";});});}
 /* El panel muestra solo los datos: sin Mapa / Panel / Ver como cliente ni Mi cuenta. */
-function enterPanel(){$("canalLbl").textContent="Panel de datos";isOwner=true;$("ownerNav").hidden=true;$("acctBtn").hidden=true;$("upd").style.marginLeft="auto";srcReal=true;$("srcReal").setAttribute("aria-pressed","true");$("srcDemo").setAttribute("aria-pressed","false");if(location.hash!=="#datos")history.replaceState(null,"","#datos");loadReal();route();}
+function enterPanel(){$("canalLbl").textContent="Panel de datos";isOwner=true;$("ownerNav").hidden=true;$("acctBtn").hidden=true;$("upd").style.marginLeft="auto";srcReal=true;if(location.hash!=="#datos")history.replaceState(null,"","#datos");loadReal();route();}
 $("asClient").addEventListener("click",function(){if(MODE==="panel"){window.open("/","_blank");return;}asClient=true;$("ownerNav").hidden=true;if(location.hash==="#datos")location.hash="#mapa";else route();toast("Así ve la página el público. Recargá para volver a ver el panel.");});
 function route(){
   var v=MODE==="panel"&&isOwner?"datos":(location.hash==="#datos"&&isOwner&&!asClient)?"datos":"mapa";
